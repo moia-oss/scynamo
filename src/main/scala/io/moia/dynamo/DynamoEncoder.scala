@@ -13,7 +13,7 @@ trait DynamoEncoder[A] { self =>
 }
 
 object DynamoEncoder extends LabelledTypeClassCompanion[DynamoEncoder] {
-  private val MAGIC_TYPE_ATTRIBUTE_NAME = "_type_"
+  val MAGIC_TYPE_ATTRIBUTE_NAME = "_type_"
 
   implicit def stringEncoder: DynamoEncoder[String] = value => AttributeValue.builder().s(value).build()
 
