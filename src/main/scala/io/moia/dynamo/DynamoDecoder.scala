@@ -39,7 +39,7 @@ object DynamoDecoder extends LabelledTypeClassCompanion[DynamoDecoder] {
         (decodedHead, decoderTail.decode(value)).mapN(_ :: _)
       }
 
-    override def emptyCoproduct: DynamoDecoder[CNil] = _ => Either.leftNec(TypeMismatch("TODO"))
+    override def emptyCoproduct: DynamoDecoder[CNil] = _ => Either.leftNec(TypeMismatch("TODO (no case matched)"))
 
     override def coproduct[L, R <: Coproduct](
         name: String,
