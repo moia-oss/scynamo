@@ -2,14 +2,14 @@ package io.moia.dynamo
 
 import io.moia.dynamo.foo.DynamoDecoder
 
-sealed trait Super
-case class Foo(i: Int, s: String)     extends Super
-case class Bar(i: Int)                extends Super
-case class BarRec(i: Int, rec: Super) extends Super
+sealed trait Test
+case class Foo(i: Int, s: String)    extends Test
+case class Bar(i: Int)               extends Test
+case class BarRec(i: Int, rec: Test) extends Test
 
-object Super {
-  implicit val superEncoder = DynamoEncoder[Super]
-  implicit val superDecoder = DynamoDecoder[Super]
+object Test {
+  implicit val encoder = DynamoEncoder[Test]
+  implicit val decoder = DynamoDecoder[Test]
 }
 
 object Examples {
@@ -18,6 +18,10 @@ object Examples {
     check("foo")
     check(Foo(42, "some string"))
     check(BarRec(1, Foo(0, "foo")))
+
+    check2(1)
+    check2("foo")
+    check2(BarRec(1, Foo(0, "foo")))
   }
 
   def check[A: DynamoDecoder: DynamoEncoder](x: A): Unit = {
@@ -26,6 +30,15 @@ object Examples {
     println(s"Encoded: $encoded")
 
     val decoded = DynamoDecoder[A].decode(encoded)
+    println(s"Decoded: $decoded")
+  }
+
+  def check2[A: DynamoCodec](x: A): Unit = {
+    println(s"Input: $x")
+    val encoded = DynamoCodec[A].encode(x)
+    println(s"Encoded: $encoded")
+
+    val decoded = DynamoCodec[A].decode(encoded)
     println(s"Decoded: $decoded")
   }
 }
