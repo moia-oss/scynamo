@@ -2,12 +2,15 @@ package io.moia.dynamo
 
 import java.time.Instant
 
+import cats.instances.vector._
+import cats.syntax.traverse._
+import scala.jdk.CollectionConverters._
 import cats.data.{EitherNec, NonEmptyChain}
 import cats.instances.either._
 import cats.kernel.Eq
 import cats.syntax.apply._
 import cats.syntax.either._
-import io.moia.dynamo.DynamoType.{DynamoBool, DynamoMap, DynamoNumber, DynamoString}
+import io.moia.dynamo.DynamoType.{DynamoBool, DynamoList, DynamoMap, DynamoNumber, DynamoString}
 import shapeless._
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
@@ -105,5 +108,12 @@ trait DynamoDecoderInstances {
         nString <- accessOrTypeMismatch(attributeValue, DynamoNumber)(_.nOpt)
         long    <- convert(nString)(_.toLong)
         result  <- convert(long)(Instant.ofEpochMilli)
+      } yield result
+
+  implicit def seqDecoder[A: DynamoDecoder]: DynamoDecoder[Seq[A]] =
+    attributeValue =>
+      for {
+        list   <- accessOrTypeMismatch(attributeValue, DynamoList)(_.lOpt)
+        result <- list.iterator.asScala.toVector.traverse(DynamoDecoder[A].decode)
       } yield result
 }

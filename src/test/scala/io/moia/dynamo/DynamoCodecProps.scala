@@ -21,6 +21,8 @@ class DynamoCodecProps extends Properties("DynamoCodec") {
     decodeAfterEncodeIsIdentity(value)
   }
 
+  property("decode .encode === id (seq)") = Prop.forAll { value: Seq[Int] => decodeAfterEncodeIsIdentity(value) }
+
   private[this] def decodeAfterEncodeIsIdentity[A: DynamoCodec](value: A): Boolean = {
     val codec = DynamoCodec[A]
 
