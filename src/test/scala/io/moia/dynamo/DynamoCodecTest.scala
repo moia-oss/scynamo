@@ -11,7 +11,8 @@ class DynamoCodecTest extends AnyWordSpec with Matchers with TypeCheckedTripleEq
       case class Foo(someString: String, someNumber: Int)
       val input = Foo("theString", 42)
 
-      val result = DynamoCodec[Foo].decode(DynamoCodec[Foo].encode(input))
+      val encoded = GenericDynamoEncoder[Foo].encode(input)
+      val result  = GenericDynamoDecoder[Foo].decode(encoded)
 
       result should ===(Right(input))
     }
@@ -22,8 +23,8 @@ class DynamoCodecTest extends AnyWordSpec with Matchers with TypeCheckedTripleEq
 
       val input = Foo("theString", 42, Bar(true))
 
-      val encoded = DynamoCodec[Foo].encode(input)
-      val result  = DynamoCodec[Foo].decode(encoded)
+      val encoded = GenericDynamoEncoder[Foo].encode(input)
+      val result  = GenericDynamoDecoder[Foo].decode(encoded)
 
       result should ===(Right(input))
     }
@@ -35,8 +36,8 @@ class DynamoCodecTest extends AnyWordSpec with Matchers with TypeCheckedTripleEq
 
       val input: Foobar = Foo("theString")
 
-      val encoded = DynamoCodec[Foobar].encode(input)
-      val result  = DynamoCodec[Foobar].decode(encoded)
+      val encoded = GenericDynamoEncoder[Foobar].encode(input)
+      val result  = GenericDynamoDecoder[Foobar].decode(encoded)
 
       result should ===(Right(input))
     }
@@ -53,8 +54,8 @@ class DynamoCodecTest extends AnyWordSpec with Matchers with TypeCheckedTripleEq
       case class H(value: Int) extends Alphabet
 
       Inspectors.forAll(List[Alphabet](A, B, C, D, E, F, G, H(42))) { input =>
-        val encoded = DynamoCodec[Alphabet].encode(input)
-        val result  = DynamoCodec[Alphabet].decode(encoded)
+        val encoded = GenericDynamoEncoder[Alphabet].encode(input)
+        val result  = GenericDynamoDecoder[Alphabet].decode(encoded)
 
         result should ===(Right(input))
       }
@@ -67,8 +68,8 @@ class DynamoCodecTest extends AnyWordSpec with Matchers with TypeCheckedTripleEq
 
       val input: Foobar = Bar(Foo("some-string"))
 
-      val encoded = DynamoCodec[Foobar].encode(input)
-      val result  = DynamoCodec[Foobar].decode(encoded)
+      val encoded = GenericDynamoEncoder[Foobar].encode(input)
+      val result  = GenericDynamoDecoder[Foobar].decode(encoded)
 
       result should ===(Right(input))
     }

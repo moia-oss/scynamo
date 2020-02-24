@@ -5,6 +5,8 @@ sealed trait DynamoType
 object TypeTest extends App
 
 object DynamoType {
+  val MAGIC_TYPE_ATTRIBUTE_NAME = "_MAGIC_TYPE_TAG_"
+
   object DynamoNull      extends DynamoType
   object DynamoBool      extends DynamoType
   object DynamoString    extends DynamoType

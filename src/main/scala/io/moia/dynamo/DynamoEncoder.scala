@@ -13,41 +13,8 @@ trait DynamoEncoder[A] { self =>
   def contramap[B](f: B => A): DynamoEncoder[B] = value => self.encode(f(value))
 }
 
-object DynamoEncoder extends LabelledTypeClassCompanion[DynamoEncoder] with DynamoEncoderInstances {
-  val MAGIC_TYPE_ATTRIBUTE_NAME = "_MAGIC_TYPE_TAG_"
-
-  object typeClass extends LabelledTypeClass[DynamoEncoder] {
-    private[this] def newMap(): util.Map[String, AttributeValue] =
-      new util.HashMap[String, AttributeValue]()
-
-    def emptyProduct: DynamoEncoder[HNil] = _ => AttributeValue.builder().m(Collections.emptyMap()).build()
-
-    def product[F, T <: HList](name: String, encoderHead: DynamoEncoder[F], encoderTail: DynamoEncoder[T]): DynamoEncoder[F :: T] =
-      value => {
-        val tail = encoderTail.encode(value.tail)
-
-        val hm = newMap()
-        hm.putAll(tail.m())
-        hm.put(name, encoderHead.encode(value.head))
-        AttributeValue.builder().m(hm).build()
-      }
-
-    def emptyCoproduct: DynamoEncoder[CNil] = _ => AttributeValue.builder().m(Collections.emptyMap()).build()
-
-    def coproduct[L, R <: Coproduct](name: String, encodeL: => DynamoEncoder[L], encodeR: => DynamoEncoder[R]): DynamoEncoder[L :+: R] = {
-      case Inl(l) =>
-        val hm = newMap()
-        hm.putAll(encodeL.encode(l).m())
-        hm.put(MAGIC_TYPE_ATTRIBUTE_NAME, AttributeValue.builder().s(name).build())
-        AttributeValue.builder().m(hm).build()
-      case Inr(r) =>
-        val hm = newMap()
-        hm.putAll(encodeR.encode(r).m())
-        AttributeValue.builder().m(hm).build()
-    }
-
-    def project[F, G](instance: => DynamoEncoder[G], to: F => G, from: G => F): DynamoEncoder[F] = value => instance.encode(to(value))
-  }
+object DynamoEncoder extends DynamoEncoderInstances {
+  implicit def toGeneric[A](implicit E: DynamoEncoder[A]): GenericDynamoEncoder[A] = value => E.encode(value)
 }
 
 trait DynamoEncoderInstances {
@@ -60,5 +27,51 @@ trait DynamoEncoderInstances {
   implicit def instantEncoder: DynamoEncoder[Instant] = value => AttributeValue.builder().s(value.toString).build()
 
   implicit def seqEncoder[A: DynamoEncoder]: DynamoEncoder[Seq[A]] =
-    value => AttributeValue.builder().l(value.map(DynamoEncoder[A].encode): _*).build()
+    value => AttributeValue.builder().l(value.map(GenericDynamoEncoder[A].encode): _*).build()
+}
+
+trait GenericDynamoEncoder[A] extends DynamoEncoder[A]
+
+object GenericDynamoEncoder extends LabelledTypeClassCompanion[GenericDynamoEncoder] {
+  override val typeClass: LabelledTypeClass[GenericDynamoEncoder] = new LabelledTypeClass[GenericDynamoEncoder] {
+    private[this] def newMap(): util.Map[String, AttributeValue] =
+      new util.HashMap[String, AttributeValue]()
+
+    def emptyProduct: GenericDynamoEncoder[HNil] = _ => AttributeValue.builder().m(Collections.emptyMap()).build()
+
+    def product[F, T <: HList](
+        name: String,
+        encoderHead: GenericDynamoEncoder[F],
+        encoderTail: GenericDynamoEncoder[T]
+    ): GenericDynamoEncoder[F :: T] =
+      value => {
+        val tail = encoderTail.encode(value.tail)
+
+        val hm = newMap()
+        hm.putAll(tail.m())
+        hm.put(name, encoderHead.encode(value.head))
+        AttributeValue.builder().m(hm).build()
+      }
+
+    def emptyCoproduct: GenericDynamoEncoder[CNil] = _ => AttributeValue.builder().m(Collections.emptyMap()).build()
+
+    def coproduct[L, R <: Coproduct](
+        name: String,
+        encodeL: => GenericDynamoEncoder[L],
+        encodeR: => GenericDynamoEncoder[R]
+    ): GenericDynamoEncoder[L :+: R] = {
+      case Inl(l) =>
+        val hm = newMap()
+        hm.putAll(encodeL.encode(l).m())
+        hm.put(DynamoType.MAGIC_TYPE_ATTRIBUTE_NAME, AttributeValue.builder().s(name).build())
+        AttributeValue.builder().m(hm).build()
+      case Inr(r) =>
+        val hm = newMap()
+        hm.putAll(encodeR.encode(r).m())
+        AttributeValue.builder().m(hm).build()
+    }
+
+    def project[F, G](instance: => GenericDynamoEncoder[G], to: F => G, from: G => F): GenericDynamoEncoder[F] =
+      value => instance.encode(to(value))
+  }
 }

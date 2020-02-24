@@ -2,18 +2,18 @@ package io.moia.dynamo
 
 import java.time.Instant
 
-import cats.instances.vector._
-import cats.syntax.traverse._
-import scala.jdk.CollectionConverters._
 import cats.data.{EitherNec, NonEmptyChain}
 import cats.instances.either._
+import cats.instances.vector._
 import cats.kernel.Eq
 import cats.syntax.apply._
 import cats.syntax.either._
-import io.moia.dynamo.DynamoType.{DynamoBool, DynamoList, DynamoMap, DynamoNumber, DynamoString}
+import cats.syntax.traverse._
+import io.moia.dynamo.DynamoType._
 import shapeless._
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
+import scala.jdk.CollectionConverters._
 import scala.util.control.NonFatal
 
 abstract class DynamoDecodeError                                              extends Product with Serializable
@@ -33,55 +33,12 @@ trait DynamoDecoder[A] { self =>
   def map[B](f: A => B): DynamoDecoder[B] = value => self.decode(value).map(f)
 }
 
-object DynamoDecoder extends LabelledTypeClassCompanion[DynamoDecoder] with DynamoDecoderInstances {
-  import io.moia.dynamo.attributevalue.dsl._
-  object typeClass extends LabelledTypeClass[DynamoDecoder] {
-    override def emptyProduct: DynamoDecoder[HNil] = _ => Right(HNil)
-
-    override def product[F, T <: HList](name: String, decoderHead: DynamoDecoder[F], decoderTail: DynamoDecoder[T]): DynamoDecoder[F :: T] =
-      value => {
-        val decodedHead = for {
-          map            <- accessOrTypeMismatch(value, DynamoMap)(_.mOpt)
-          fieldAttrValue <- Option(map.get(name)).map(Right(_)).getOrElse(Either.leftNec(MissingField(name, value)))
-          result         <- decoderHead.decode(fieldAttrValue)
-        } yield result
-
-        (decodedHead, decoderTail.decode(value)).mapN(_ :: _)
-      }
-
-    override def emptyCoproduct: DynamoDecoder[CNil] = value => Either.leftNec(InvalidCase(value))
-
-    override def coproduct[L, R <: Coproduct](
-        name: String,
-        decodeL: => DynamoDecoder[L],
-        decodeR: => DynamoDecoder[R]
-    ): DynamoDecoder[L :+: R] =
-      value => {
-        for {
-          map <- accessOrTypeMismatch(value, DynamoMap)(_.mOpt)
-          typeTagAttrValue <- Option(map.get(DynamoEncoder.MAGIC_TYPE_ATTRIBUTE_NAME))
-            .map(Right(_))
-            .getOrElse(Either.leftNec(MissingField(name, value)))
-          typeTag <- accessOrTypeMismatch(typeTagAttrValue, DynamoString)(_.sOpt)
-          result  <- if (name == typeTag) decodeL.decode(value).map(Inl(_)) else decodeR.decode(value).map(Inr(_))
-        } yield result
-      }
-
-    override def project[F, G](instance: => DynamoDecoder[G], to: F => G, from: G => F): DynamoDecoder[F] =
-      attributeValue => instance.decode(attributeValue).map(from)
-  }
+object DynamoDecoder extends DynamoDecoderInstances with DynamoDecoderFunctions {
+  implicit def toGeneric[A](implicit D: DynamoDecoder[A]): GenericDynamoDecoder[A] = attributeValue => D.decode(attributeValue)
 }
 
-trait DynamoDecoderInstances {
+trait DynamoDecoderInstances extends DynamoDecoderFunctions {
   import io.moia.dynamo.attributevalue.dsl._
-
-  private[dynamo] def accessOrTypeMismatch[A](attributeValue: AttributeValue, typ: DynamoType)(
-      access: AttributeValue => Option[A]
-  ): Either[NonEmptyChain[TypeMismatch], A] =
-    access(attributeValue) match {
-      case None        => Either.leftNec(TypeMismatch(typ, attributeValue))
-      case Some(value) => Right(value)
-    }
 
   private[this] def convert[A, B](s: A)(convertor: A => B): EitherNec[DynamoDecodeError, B] =
     try {
@@ -113,6 +70,62 @@ trait DynamoDecoderInstances {
     attributeValue =>
       for {
         list   <- accessOrTypeMismatch(attributeValue, DynamoList)(_.lOpt)
-        result <- list.iterator.asScala.toVector.traverse(DynamoDecoder[A].decode)
+        result <- list.iterator.asScala.toVector.traverse(GenericDynamoDecoder[A].decode)
       } yield result
+}
+
+trait DynamoDecoderFunctions {
+  private[dynamo] def accessOrTypeMismatch[A](attributeValue: AttributeValue, typ: DynamoType)(
+      access: AttributeValue => Option[A]
+  ): Either[NonEmptyChain[TypeMismatch], A] =
+    access(attributeValue) match {
+      case None        => Either.leftNec(TypeMismatch(typ, attributeValue))
+      case Some(value) => Right(value)
+    }
+}
+
+trait GenericDynamoDecoder[A] extends DynamoDecoder[A]
+
+object GenericDynamoDecoder extends LabelledTypeClassCompanion[GenericDynamoDecoder] with DynamoDecoderFunctions {
+  import io.moia.dynamo.attributevalue.dsl._
+
+  override val typeClass: LabelledTypeClass[GenericDynamoDecoder] = new LabelledTypeClass[GenericDynamoDecoder] {
+    override def emptyProduct: GenericDynamoDecoder[HNil] = _ => Right(HNil)
+
+    override def product[F, T <: HList](
+        name: String,
+        decoderHead: GenericDynamoDecoder[F],
+        decoderTail: GenericDynamoDecoder[T]
+    ): GenericDynamoDecoder[F :: T] =
+      value => {
+        val decodedHead = for {
+          map            <- accessOrTypeMismatch(value, DynamoMap)(_.mOpt)
+          fieldAttrValue <- Option(map.get(name)).map(Right(_)).getOrElse(Either.leftNec(MissingField(name, value)))
+          result         <- decoderHead.decode(fieldAttrValue)
+        } yield result
+
+        (decodedHead, decoderTail.decode(value)).mapN(_ :: _)
+      }
+
+    override def emptyCoproduct: GenericDynamoDecoder[CNil] = value => Either.leftNec(InvalidCase(value))
+
+    override def coproduct[L, R <: Coproduct](
+        name: String,
+        decodeL: => GenericDynamoDecoder[L],
+        decodeR: => GenericDynamoDecoder[R]
+    ): GenericDynamoDecoder[L :+: R] =
+      value => {
+        for {
+          map <- accessOrTypeMismatch(value, DynamoMap)(_.mOpt)
+          typeTagAttrValue <- Option(map.get(DynamoType.MAGIC_TYPE_ATTRIBUTE_NAME))
+            .map(Right(_))
+            .getOrElse(Either.leftNec(MissingField(name, value)))
+          typeTag <- accessOrTypeMismatch(typeTagAttrValue, DynamoString)(_.sOpt)
+          result  <- if (name == typeTag) decodeL.decode(value).map(Inl(_)) else decodeR.decode(value).map(Inr(_))
+        } yield result
+      }
+
+    override def project[F, G](instance: => GenericDynamoDecoder[G], to: F => G, from: G => F): GenericDynamoDecoder[F] =
+      attributeValue => instance.decode(attributeValue).map(from)
+  }
 }
