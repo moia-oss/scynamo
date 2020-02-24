@@ -1,7 +1,6 @@
 package io.moia.dynamo
 
 import cats.data.EitherNec
-import io.moia.dynamo.foo.{DynamoDecodeError, DynamoDecoder}
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
 trait DynamoCodec[A] extends DynamoEncoder[A] with DynamoDecoder[A] {
