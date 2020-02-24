@@ -3,6 +3,7 @@ package io.moia.dynamo
 import java.time.Instant
 
 import org.scalacheck.{Gen, Prop, Properties}
+import org.scalacheck.Prop.propBoolean
 
 class DynamoCodecProps extends Properties("DynamoCodec") {
   property("decode .encode === id (int)") = Prop.forAll { value: Int => decodeAfterEncodeIsIdentity(value) }
@@ -23,9 +24,11 @@ class DynamoCodecProps extends Properties("DynamoCodec") {
 
   property("decode .encode === id (seq)") = Prop.forAll { value: Seq[Int] => decodeAfterEncodeIsIdentity(value) }
 
-  private[this] def decodeAfterEncodeIsIdentity[A: DynamoCodec](value: A): Boolean = {
+  private[this] def decodeAfterEncodeIsIdentity[A: DynamoCodec](value: A): Prop = {
     val codec = DynamoCodec[A]
 
-    codec.decode(codec.encode(value)) == Right(value)
+    val encoded = codec.encode(value)
+    val decoded = codec.decode(encoded)
+    (decoded == Right(value)) :| s"encoded = $encoded" :| s"decoded = $decoded"
   }
 }

@@ -105,9 +105,8 @@ trait DynamoDecoderInstances {
   implicit def instantDecoder: DynamoDecoder[Instant] =
     attributeValue =>
       for {
-        nString <- accessOrTypeMismatch(attributeValue, DynamoNumber)(_.nOpt)
-        long    <- convert(nString)(_.toLong)
-        result  <- convert(long)(Instant.ofEpochMilli)
+        string <- accessOrTypeMismatch(attributeValue, DynamoString)(_.sOpt)
+        result <- convert(string)(Instant.parse)
       } yield result
 
   implicit def seqDecoder[A: DynamoDecoder]: DynamoDecoder[Seq[A]] =
