@@ -30,7 +30,9 @@ trait DynamoEncoderInstances {
     value => AttributeValue.builder().l(value.map(GenericDynamoEncoder[A].encode): _*).build()
 }
 
-trait GenericDynamoEncoder[A] extends DynamoEncoder[A]
+trait GenericDynamoEncoder[A] extends DynamoEncoder[A] {
+  def encodeMap(value: A): java.util.Map[String, AttributeValue] = encode(value).m // TODO: design
+}
 
 object GenericDynamoEncoder extends LabelledTypeClassCompanion[GenericDynamoEncoder] {
   override val typeClass: LabelledTypeClass[GenericDynamoEncoder] = new LabelledTypeClass[GenericDynamoEncoder] {
