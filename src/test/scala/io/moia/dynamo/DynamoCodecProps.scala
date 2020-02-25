@@ -24,11 +24,20 @@ class DynamoCodecProps extends Properties("DynamoCodec") {
 
   property("decode .encode === id (seq)") = Prop.forAll { value: Seq[Int] => decodeAfterEncodeIsIdentity(value) }
 
+  property("decode . encode === id (case class)") = Prop.forAll { value: Int => decodeAfterEncodeIsIdentity(DynamoCodecProps.Foo(value)) }
+
   private[this] def decodeAfterEncodeIsIdentity[A: DynamoCodec](value: A): Prop = {
     val codec = DynamoCodec[A]
 
     val encoded = codec.encode(value)
     val decoded = codec.decode(encoded)
     (decoded == Right(value)) :| s"encoded = $encoded" :| s"decoded = $decoded"
+  }
+}
+
+object DynamoCodecProps {
+  case class Foo(intAttribute: Int)
+  object Foo {
+    implicit val fooCodec: GenericDynamoCodec[Foo] = GenericDynamoCodec[Foo]
   }
 }
