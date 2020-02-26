@@ -1,6 +1,7 @@
 package scynamo
 
 import java.time.Instant
+import java.util.UUID
 
 import cats.data.{EitherNec, NonEmptyChain}
 import cats.instances.either._
@@ -92,6 +93,9 @@ trait ScynamoDecoderInstances extends ScynamoDecoderFunctions {
     attributeValue => if (attributeValue.nul()) Right(None) else ScynamoDecoder[A].decode(attributeValue).map(Some(_))
 
   implicit val durationDecoder: ScynamoDecoder[FiniteDuration] = longDecoder.map(Duration.fromNanos)
+
+  implicit val uuidDecoder: ScynamoDecoder[UUID] = attributeValue =>
+    accessOrTypeMismatch(attributeValue, ScynamoString)(_.sOpt).flatMap(s => convert(s)(UUID.fromString))
 }
 
 object ScynamoDecoderFunctions extends ScynamoDecoderFunctions

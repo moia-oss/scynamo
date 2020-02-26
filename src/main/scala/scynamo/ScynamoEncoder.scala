@@ -1,6 +1,7 @@
 package scynamo
 
 import java.time.Instant
+import java.util.UUID
 
 import shapeless._
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
@@ -37,6 +38,8 @@ trait ScynamoEncoderInstances {
   implicit val booleanEncoder: ScynamoEncoder[Boolean] = value => AttributeValue.builder().bool(value).build()
 
   implicit val instantEncoder: ScynamoEncoder[Instant] = value => AttributeValue.builder().n(value.toEpochMilli.toString).build()
+
+  implicit val uuidEncoder: ScynamoEncoder[UUID] = value => AttributeValue.builder().s(value.toString).build()
 
   implicit def seqEncoder[A: ScynamoEncoder]: ScynamoEncoder[Seq[A]] =
     value => AttributeValue.builder().l(value.map(ScynamoEncoder[A].encode): _*).build()

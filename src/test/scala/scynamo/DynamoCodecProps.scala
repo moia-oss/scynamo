@@ -1,6 +1,7 @@
 package scynamo
 
 import java.time.Instant
+import java.util.UUID
 
 import DynamoCodecProps.Shape
 import org.scalacheck.Prop.propBoolean
@@ -46,6 +47,8 @@ class DynamoCodecProps extends Properties("DynamoCodec") {
   propertyWithSeed("decode.encode === id (sealed trait)", None) = Prop.forAll(Shape.shapeGen) { value: Shape =>
     decodeAfterEncodeIsIdentity(value)
   }
+
+  propertyWithSeed("decode.encode === id (uuid)", None) = Prop.forAll { value: UUID => decodeAfterEncodeIsIdentity(value) }
 
   private[this] def decodeAfterEncodeIsIdentity[A](value: A)(implicit codec: ScynamoCodec[A]): Prop = {
     val encoded = codec.encode(value)
