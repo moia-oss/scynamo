@@ -8,7 +8,14 @@ lazy val root = (project in file("."))
     name := "scynamo",
     organization := "io.moia",
     scalaVersion := "2.13.1",
-    scalacOptions := scalaCompilerOptions,
+    crossScalaVersions := List("2.13.1", "2.12.10"),
+    scalacOptions ++= {
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, 12)) => scalacOptions_2_12
+        case Some((2, 13)) => scalacOptions_2_13
+        case _             => Seq()
+      }
+    },
     scalafmtOnCompile := true,
     resolvers += "Artifactory".at("https://moiadev.jfrog.io/moiadev/sbt-release"),
     credentials ++= Seq(Path.userHome / ".ivy2" / ".credentials").filter(_.exists).map(Credentials(_)),
@@ -21,34 +28,43 @@ lazy val root = (project in file("."))
       "com.chuusai"            %% "shapeless"  % "2.3.3",
       "software.amazon.awssdk" % "dynamodb"    % "2.10.65",
       "org.typelevel"          %% "cats-core"  % "2.1.0",
-      "org.scalacheck"         %% "scalacheck" % "1.14.1" % Test
+      "org.scalacheck"         %% "scalacheck" % "1.14.1" % Test,
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.2"
     )
   )
   .settings(sbtGitSettings)
   .settings(scalaFmtSettings)
 
-lazy val scalaCompilerOptions = Seq(
-  "-target:11",
-  "-deprecation",
-  "-encoding",
-  "utf-8",
-  "-explaintypes",
-  "-feature",
-  "-language:higherKinds",
-  "-language:implicitConversions",
+lazy val scalacOptions_2_12 = Seq(
   "-unchecked",
+  "-deprecation",
+  "-language:_",
+  "-target:jvm-1.8",
+  "-encoding",
+  "UTF-8",
   "-Xfatal-warnings",
-  "-Xlint",
+  "-Ywarn-unused-import",
+  "-Yno-adapted-args",
   "-Ywarn-dead-code",
-  "-Ywarn-extra-implicit",
-  "-Ywarn-numeric-widen",
-  "-Ywarn-unused:implicits",
-  "-Ywarn-unused:imports",
-  "-Ywarn-unused:locals",
-  "-Ywarn-unused:params",
-  "-Ywarn-unused:patvars",
-  "-Ywarn-unused:privates",
-  "-Ywarn-value-discard"
+  "-Ywarn-inaccessible",
+  "-Ywarn-infer-any",
+  "-Ywarn-nullary-override",
+  "-Ywarn-nullary-unit",
+  "-Ypartial-unification",
+  "-Xlint"
+)
+
+lazy val scalacOptions_2_13 = Seq(
+  "-unchecked",
+  "-deprecation",
+  "-language:_",
+  "-target:jvm-1.8",
+  "-encoding",
+  "UTF-8",
+  "-Xfatal-warnings",
+  "-Ywarn-dead-code",
+  "-Ymacro-annotations",
+  "-Xlint"
 )
 
 lazy val sbtVersionRegex = "v([0-9]+.[0-9]+.[0-9]+)-?(.*)?".r
