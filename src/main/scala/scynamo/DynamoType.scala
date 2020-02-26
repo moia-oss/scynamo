@@ -1,4 +1,4 @@
-package io.moia.dynamo
+package scynamo
 
 sealed trait DynamoType
 

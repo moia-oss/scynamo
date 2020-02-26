@@ -1,4 +1,4 @@
-package io.moia.dynamo
+package scynamo
 
 import cats.data.EitherNec
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue

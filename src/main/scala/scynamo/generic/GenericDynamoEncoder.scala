@@ -1,6 +1,7 @@
-package io.moia.dynamo.generic
+package scynamo.generic
 
 import io.moia.dynamo.ObjectDynamoEncoder
+import scynamo.ObjectDynamoEncoder
 import shapeless.{LabelledGeneric, Lazy}
 
 trait GenericDynamoEncoder[A] extends ObjectDynamoEncoder[A]

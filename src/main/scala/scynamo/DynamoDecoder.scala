@@ -1,4 +1,4 @@
-package io.moia.dynamo
+package scynamo
 
 import java.time.Instant
 
@@ -8,7 +8,7 @@ import cats.instances.vector._
 import cats.kernel.Eq
 import cats.syntax.either._
 import cats.syntax.traverse._
-import io.moia.dynamo.DynamoType._
+import DynamoType._
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
 import scala.jdk.CollectionConverters._

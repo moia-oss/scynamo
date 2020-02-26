@@ -1,4 +1,4 @@
-package io.moia.dynamo
+package scynamo
 
 import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest.Inspectors

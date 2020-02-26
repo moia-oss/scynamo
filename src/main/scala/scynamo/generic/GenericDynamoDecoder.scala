@@ -1,8 +1,10 @@
-package io.moia.dynamo.generic
+package scynamo.generic
 
 import cats.syntax.either._
 import io.moia.dynamo.DynamoType.DynamoMap
 import io.moia.dynamo.{DynamoDecoder, TypeMismatch}
+import scynamo.{DynamoDecoder, TypeMismatch}
+import scynamo.DynamoType.DynamoMap
 import shapeless.{LabelledGeneric, Lazy}
 
 trait GenericDynamoDecoder[A] extends DynamoDecoder[A]

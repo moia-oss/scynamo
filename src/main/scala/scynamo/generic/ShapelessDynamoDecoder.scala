@@ -1,4 +1,4 @@
-package io.moia.dynamo.generic
+package scynamo.generic
 
 import cats.data.EitherNec
 import cats.instances.either._
@@ -7,6 +7,8 @@ import cats.syntax.either._
 import io.moia.dynamo.DynamoType.DynamoString
 import io.moia.dynamo.attributevalue.dsl._
 import io.moia.dynamo._
+import scynamo.DynamoType.DynamoString
+import scynamo.{DynamoDecodeError, DynamoDecoder, DynamoDecoderFunctions, DynamoType, InvalidCase, MissingFieldInMap}
 import shapeless._
 import shapeless.labelled._
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue

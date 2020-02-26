@@ -1,3 +1,3 @@
-package io.moia.dynamo.generic
+package scynamo.generic
 
 package object auto extends GenericDynamoEncoderInstances with GenericDynamoDecoderInstances

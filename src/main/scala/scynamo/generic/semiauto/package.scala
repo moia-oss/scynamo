@@ -1,6 +1,8 @@
-package io.moia.dynamo.generic
+package scynamo.generic.semiauto
 
 import io.moia.dynamo.{DynamoDecoder, ObjectDynamoCodec, ObjectDynamoEncoder}
+import scynamo.{DynamoDecoder, ObjectDynamoCodec, ObjectDynamoEncoder}
+import scynamo.generic.{GenericDynamoDecoder, GenericDynamoEncoder}
 import shapeless.Lazy
 
 package object semiauto extends Semiauto

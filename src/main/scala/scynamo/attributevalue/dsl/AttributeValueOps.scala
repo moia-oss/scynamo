@@ -1,4 +1,4 @@
-package io.moia.dynamo.attributevalue.dsl
+package scynamo.attributevalue.dsl
 
 import java.util
 import software.amazon.awssdk.core.SdkBytes

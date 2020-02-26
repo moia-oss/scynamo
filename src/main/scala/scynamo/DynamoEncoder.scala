@@ -1,4 +1,4 @@
-package io.moia.dynamo
+package scynamo
 
 import java.time.Instant
 

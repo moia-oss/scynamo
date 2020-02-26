@@ -1,9 +1,10 @@
-package io.moia.dynamo.generic
+package scynamo.generic
 
 import java.util
 import java.util.Collections
 
 import io.moia.dynamo.{DynamoEncoder, DynamoType}
+import scynamo.{DynamoEncoder, DynamoType}
 import shapeless._
 import shapeless.labelled._
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue

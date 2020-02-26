@@ -1,6 +1,5 @@
-package io.moia.dynamo.attributevalue
+package scynamo.attributevalue.dsl
 
-import io.moia.dynamo.attributevalue.dsl.AttributeValueOps
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
 package object dsl extends AttributeValueDsl

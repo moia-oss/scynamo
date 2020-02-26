@@ -1,8 +1,8 @@
-package io.moia.dynamo
+package scynamo
 
 import java.time.Instant
 
-import io.moia.dynamo.DynamoCodecProps.Shape
+import DynamoCodecProps.Shape
 import org.scalacheck.Prop.propBoolean
 import org.scalacheck.{Gen, Prop, Properties}
 import io.moia.dynamo.generic.semiauto._
