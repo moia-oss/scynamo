@@ -50,13 +50,6 @@ object ScynamoDecoder extends ScynamoDecoderInstances with ScynamoDecoderFunctio
 trait ScynamoDecoderInstances extends ScynamoDecoderFunctions {
   import scynamo.attributevalue.dsl._
 
-  private[this] def convert[A, B](s: A)(convertor: A => B): EitherNec[ScynamoDecodeError, B] =
-    try {
-      Right(convertor(s))
-    } catch {
-      case NonFatal(e) => Either.leftNec(ParseError(s"Could not convert: ${e.getMessage}", Some(e)))
-    }
-
   implicit def stringDecoder: ScynamoDecoder[String] = attributeValue => accessOrTypeMismatch(attributeValue, ScynamoString)(_.sOpt)
 
   implicit def numericDecoder[A](implicit N: Numeric[A]): ScynamoDecoder[A] =
@@ -96,5 +89,12 @@ trait ScynamoDecoderFunctions {
     access(attributeValue) match {
       case None        => Either.leftNec(TypeMismatch(typ, attributeValue))
       case Some(value) => Right(value)
+    }
+
+  def convert[A, B](s: A)(convertor: A => B): EitherNec[ScynamoDecodeError, B] =
+    try {
+      Right(convertor(s))
+    } catch {
+      case NonFatal(e) => Either.leftNec(ParseError(s"Could not convert: ${e.getMessage}", Some(e)))
     }
 }
