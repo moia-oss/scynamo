@@ -34,7 +34,6 @@ trait EncoderHListInstances {
 }
 
 trait EncoderCoproductInstances {
-
   implicit def deriveCNil: ShapelessDynamoEncoder[CNil] = _ => Collections.emptyMap()
 
   implicit def deriveCCons[K <: Symbol, V, T <: Coproduct](
