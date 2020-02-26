@@ -28,6 +28,11 @@ trait DynamoEncoderInstances {
 
   implicit def seqEncoder[A: DynamoEncoder]: DynamoEncoder[Seq[A]] =
     value => AttributeValue.builder().l(value.map(DynamoEncoder[A].encode): _*).build()
+
+  implicit def optionEncoder[A: DynamoEncoder]: DynamoEncoder[Option[A]] = {
+    case Some(value) => DynamoEncoder[A].encode(value)
+    case None        => AttributeValue.builder().nul(true).build()
+  }
 }
 
 trait ObjectDynamoEncoder[A] extends DynamoEncoder[A] {

@@ -71,6 +71,9 @@ trait DynamoDecoderInstances extends DynamoDecoderFunctions {
         list   <- accessOrTypeMismatch(attributeValue, DynamoList)(_.lOpt)
         result <- list.iterator.asScala.toVector.traverse(DynamoDecoder[A].decode)
       } yield result
+
+  implicit def optionDecoder[A: DynamoDecoder]: DynamoDecoder[Option[A]] =
+    attributeValue => if (attributeValue.nul()) Right(None) else DynamoDecoder[A].decode(attributeValue).map(Some(_))
 }
 
 trait DynamoDecoderFunctions {
