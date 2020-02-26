@@ -1,11 +1,8 @@
 package scynamo
 
-import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest.Inspectors
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
-class ScynamoCodecTest extends AnyWordSpec with Matchers with TypeCheckedTripleEquals {
+class ScynamoCodecTest extends UnitTest {
   "DynamoCodec" should {
     import scynamo.generic.auto._
 

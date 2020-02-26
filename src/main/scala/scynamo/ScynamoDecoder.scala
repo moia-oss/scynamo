@@ -8,7 +8,8 @@ import cats.instances.vector._
 import cats.kernel.Eq
 import cats.syntax.either._
 import cats.syntax.traverse._
-import ScynamoType._
+import cats.{Functor, SemigroupK}
+import scynamo.ScynamoType._
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
 import scala.jdk.CollectionConverters._
@@ -30,10 +31,20 @@ trait ScynamoDecoder[A] { self =>
   def decode(attributeValue: AttributeValue): EitherNec[ScynamoDecodeError, A]
 
   def map[B](f: A => B): ScynamoDecoder[B] = value => self.decode(value).map(f)
+
+  def orElse[AA >: A](other: ScynamoDecoder[A]): ScynamoDecoder[AA] =
+    (attributeValue: AttributeValue) => self.decode(attributeValue).orElse(other.decode(attributeValue))
 }
 
 object ScynamoDecoder extends ScynamoDecoderInstances with ScynamoDecoderFunctions {
   def apply[A](implicit instance: ScynamoDecoder[A]): ScynamoDecoder[A] = instance
+
+  implicit val catsInstances: Functor[ScynamoDecoder] with SemigroupK[ScynamoDecoder] =
+    new Functor[ScynamoDecoder] with SemigroupK[ScynamoDecoder] {
+      override def map[A, B](fa: ScynamoDecoder[A])(f: A => B): ScynamoDecoder[B] = fa.map(f)
+
+      override def combineK[A](x: ScynamoDecoder[A], y: ScynamoDecoder[A]): ScynamoDecoder[A] = x.orElse(y)
+    }
 }
 
 trait ScynamoDecoderInstances extends ScynamoDecoderFunctions {
@@ -76,8 +87,10 @@ trait ScynamoDecoderInstances extends ScynamoDecoderFunctions {
     attributeValue => if (attributeValue.nul()) Right(None) else ScynamoDecoder[A].decode(attributeValue).map(Some(_))
 }
 
+object ScynamoDecoderFunctions extends ScynamoDecoderFunctions
+
 trait ScynamoDecoderFunctions {
-  private[scynamo] def accessOrTypeMismatch[A](attributeValue: AttributeValue, typ: ScynamoType)(
+  def accessOrTypeMismatch[A](attributeValue: AttributeValue, typ: ScynamoType)(
       access: AttributeValue => Option[A]
   ): Either[NonEmptyChain[TypeMismatch], A] =
     access(attributeValue) match {
