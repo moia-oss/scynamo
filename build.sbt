@@ -6,7 +6,7 @@ lazy val root = (project in file("."))
   )
   .settings(
     name := "scynamo",
-    organization := "org.scynamo",
+    organization := "io.moia",
     scalaVersion := "2.13.1",
     scalacOptions := scalaCompilerOptions,
     scalafmtOnCompile := true,
