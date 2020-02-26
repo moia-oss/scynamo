@@ -5,8 +5,8 @@ lazy val root = (project in file("."))
     GitBranchPrompt
   )
   .settings(
-    name := "dynamo-format",
-    organization := "io.moia",
+    name := "scynamo",
+    organization := "org.scynamo",
     scalaVersion := "2.13.1",
     scalacOptions := scalaCompilerOptions,
     scalafmtOnCompile := true,

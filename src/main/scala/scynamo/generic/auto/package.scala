@@ -1,3 +1,3 @@
 package scynamo.generic
 
-package object auto extends GenericDynamoEncoderInstances with GenericDynamoDecoderInstances
+package object auto extends GenericScynamoEncoderInstances with GenericscynamoDecoderInstances

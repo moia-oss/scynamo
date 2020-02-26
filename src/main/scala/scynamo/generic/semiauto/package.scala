@@ -1,20 +1,18 @@
-package scynamo.generic.semiauto
+package scynamo.generic
 
-import io.moia.dynamo.{DynamoDecoder, ObjectDynamoCodec, ObjectDynamoEncoder}
-import scynamo.{DynamoDecoder, ObjectDynamoCodec, ObjectDynamoEncoder}
-import scynamo.generic.{GenericDynamoDecoder, GenericDynamoEncoder}
+import scynamo.{ObjectScynamoCodec, ObjectScynamoEncoder, ScynamoDecoder}
 import shapeless.Lazy
 
 package object semiauto extends Semiauto
 
 trait Semiauto {
-  def deriveDynamoEncoder[A](implicit genericEncoder: Lazy[GenericDynamoEncoder[A]]): ObjectDynamoEncoder[A] = genericEncoder.value
+  def deriveScynamoEncoder[A](implicit genericEncoder: Lazy[GenericScynamoEncoder[A]]): ObjectScynamoEncoder[A] = genericEncoder.value
 
-  def deriveDynamoDecoder[A](implicit genericDecoder: Lazy[GenericDynamoDecoder[A]]): DynamoDecoder[A] = genericDecoder.value
+  def derivescynamoDecoder[A](implicit genericDecoder: Lazy[GenericScynamoDecoder[A]]): ScynamoDecoder[A] = genericDecoder.value
 
   def deriveDynamoCodec[A](
       implicit
-      genericEncoder: GenericDynamoEncoder[A],
-      genericDecoder: GenericDynamoDecoder[A]
-  ): ObjectDynamoCodec[A] = ObjectDynamoCodec.fromEncoderAndDecoder(genericEncoder, genericDecoder)
+      genericEncoder: GenericScynamoEncoder[A],
+      genericDecoder: GenericScynamoDecoder[A]
+  ): ObjectScynamoCodec[A] = ObjectScynamoCodec.fromEncoderAndDecoder(genericEncoder, genericDecoder)
 }

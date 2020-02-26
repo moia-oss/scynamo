@@ -1,0 +1,87 @@
+package scynamo
+
+import java.time.Instant
+
+import cats.data.{EitherNec, NonEmptyChain}
+import cats.instances.either._
+import cats.instances.vector._
+import cats.kernel.Eq
+import cats.syntax.either._
+import cats.syntax.traverse._
+import ScynamoType._
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue
+
+import scala.jdk.CollectionConverters._
+import scala.util.control.NonFatal
+
+abstract class ScynamoDecodeError                                                            extends Product with Serializable
+case class MissingField(fieldName: String, attributeValue: AttributeValue)                   extends ScynamoDecodeError
+case class MissingFieldInMap(fieldName: String, hmap: java.util.Map[String, AttributeValue]) extends ScynamoDecodeError
+case class TypeMismatch(expected: ScynamoType, attributeValue: AttributeValue)               extends ScynamoDecodeError
+case class InvalidCase(hmap: java.util.Map[String, AttributeValue])                          extends ScynamoDecodeError
+case class ParseError(message: String, cause: Option[Throwable])                             extends ScynamoDecodeError
+case class InvalidTypeTag(attributeValue: AttributeValue)                                    extends ScynamoDecodeError
+
+object ScynamoDecodeError {
+  implicit val scynamoDecodeErrorEq: Eq[ScynamoDecodeError] = Eq.fromUniversalEquals[ScynamoDecodeError]
+}
+
+trait ScynamoDecoder[A] { self =>
+  def decode(attributeValue: AttributeValue): EitherNec[ScynamoDecodeError, A]
+
+  def map[B](f: A => B): ScynamoDecoder[B] = value => self.decode(value).map(f)
+}
+
+object ScynamoDecoder extends ScynamoDecoderInstances with ScynamoDecoderFunctions {
+  def apply[A](implicit instance: ScynamoDecoder[A]): ScynamoDecoder[A] = instance
+}
+
+trait ScynamoDecoderInstances extends ScynamoDecoderFunctions {
+  import scynamo.attributevalue.dsl._
+
+  private[this] def convert[A, B](s: A)(convertor: A => B): EitherNec[ScynamoDecodeError, B] =
+    try {
+      Right(convertor(s))
+    } catch {
+      case NonFatal(e) => Either.leftNec(ParseError(s"Could not convert: ${e.getMessage}", Some(e)))
+    }
+
+  implicit def stringDecoder: ScynamoDecoder[String] = attributeValue => accessOrTypeMismatch(attributeValue, ScynamoString)(_.sOpt)
+
+  implicit def numericDecoder[A](implicit N: Numeric[A]): ScynamoDecoder[A] =
+    attributeValue =>
+      for {
+        nString <- accessOrTypeMismatch(attributeValue, ScynamoNumber)(_.nOpt)
+        n       <- convert(nString)(s => N.parseString(s).get)
+      } yield n
+
+  implicit def booleanDecoder: ScynamoDecoder[Boolean] =
+    attributeValue => accessOrTypeMismatch(attributeValue, ScynamoBool)(_.boolOpt)
+
+  implicit def instantDecoder: ScynamoDecoder[Instant] =
+    attributeValue =>
+      for {
+        nstring <- accessOrTypeMismatch(attributeValue, ScynamoString)(_.nOpt)
+        result  <- convert(nstring)(_.toLong)
+      } yield Instant.ofEpochMilli(result)
+
+  implicit def seqDecoder[A: ScynamoDecoder]: ScynamoDecoder[Seq[A]] =
+    attributeValue =>
+      for {
+        list   <- accessOrTypeMismatch(attributeValue, ScynamoList)(_.lOpt)
+        result <- list.iterator.asScala.toVector.traverse(ScynamoDecoder[A].decode)
+      } yield result
+
+  implicit def optionDecoder[A: ScynamoDecoder]: ScynamoDecoder[Option[A]] =
+    attributeValue => if (attributeValue.nul()) Right(None) else ScynamoDecoder[A].decode(attributeValue).map(Some(_))
+}
+
+trait ScynamoDecoderFunctions {
+  private[scynamo] def accessOrTypeMismatch[A](attributeValue: AttributeValue, typ: ScynamoType)(
+      access: AttributeValue => Option[A]
+  ): Either[NonEmptyChain[TypeMismatch], A] =
+    access(attributeValue) match {
+      case None        => Either.leftNec(TypeMismatch(typ, attributeValue))
+      case Some(value) => Right(value)
+    }
+}

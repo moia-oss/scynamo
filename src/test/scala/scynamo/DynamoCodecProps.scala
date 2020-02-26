@@ -5,7 +5,7 @@ import java.time.Instant
 import DynamoCodecProps.Shape
 import org.scalacheck.Prop.propBoolean
 import org.scalacheck.{Gen, Prop, Properties}
-import io.moia.dynamo.generic.semiauto._
+import scynamo.generic.semiauto._
 
 class DynamoCodecProps extends Properties("DynamoCodec") {
   propertyWithSeed("decode.encode === id (int)", None) = Prop.forAll { value: Int => decodeAfterEncodeIsIdentity(value) }
@@ -36,7 +36,7 @@ class DynamoCodecProps extends Properties("DynamoCodec") {
     decodeAfterEncodeIsIdentity(value)
   }
 
-  private[this] def decodeAfterEncodeIsIdentity[A](value: A)(implicit codec: DynamoCodec[A]): Prop = {
+  private[this] def decodeAfterEncodeIsIdentity[A](value: A)(implicit codec: ScynamoCodec[A]): Prop = {
     val encoded = codec.encode(value)
     val decoded = codec.decode(encoded)
     (decoded == Right(value)) :| s"encoded = $encoded" :| s"decoded = $decoded"
@@ -46,25 +46,25 @@ class DynamoCodecProps extends Properties("DynamoCodec") {
 object DynamoCodecProps {
   case class Foo(intAttribute: Int)
   object Foo {
-    implicit val instance: ObjectDynamoCodec[Foo] = deriveDynamoCodec[Foo]
+    implicit val instance: ObjectScynamoCodec[Foo] = deriveDynamoCodec[Foo]
   }
 
   sealed trait Shape
   case class Square(size: Int) extends Shape
 
   object Square {
-    implicit val instance: ObjectDynamoCodec[Square] = deriveDynamoCodec[Square]
+    implicit val instance: ObjectScynamoCodec[Square] = deriveDynamoCodec[Square]
   }
 
   case class Rectangle(width: Int, height: Int) extends Shape
 
   object Rectangle {
-    implicit val instance: ObjectDynamoCodec[Rectangle] = deriveDynamoCodec[Rectangle]
+    implicit val instance: ObjectScynamoCodec[Rectangle] = deriveDynamoCodec[Rectangle]
   }
 
   object Shape {
-    implicit val instance: ObjectDynamoCodec[Shape] = deriveDynamoCodec[Shape]
-    val squareGen: Gen[Square]                      = Gen.posNum[Int].map(Square(_))
+    implicit val instance: ObjectScynamoCodec[Shape] = deriveDynamoCodec[Shape]
+    val squareGen: Gen[Square]                       = Gen.posNum[Int].map(Square(_))
     val rectangleGen: Gen[Rectangle] = for {
       w <- Gen.posNum[Int]
       h <- Gen.posNum[Int]

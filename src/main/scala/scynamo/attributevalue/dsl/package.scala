@@ -1,5 +1,6 @@
-package scynamo.attributevalue.dsl
+package scynamo.attributevalue
 
+import scynamo.attributevalue.dsl.AttributeValueOps
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
 package object dsl extends AttributeValueDsl
