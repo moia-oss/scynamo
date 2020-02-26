@@ -7,12 +7,14 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class DynamoCodecTest extends AnyWordSpec with Matchers with TypeCheckedTripleEquals {
   "DynamoCodec" should {
+    import io.moia.dynamo.generic.auto._
+
     "encode then decode a case class" in {
       case class Foo(someString: String, someNumber: Int)
       val input = Foo("theString", 42)
 
-      val encoded = GenericDynamoCodec[Foo].encode(input)
-      val result  = GenericDynamoCodec[Foo].decode(encoded)
+      val encoded = ObjectDynamoCodec[Foo].encode(input)
+      val result  = ObjectDynamoCodec[Foo].decode(encoded)
 
       result should ===(Right(input))
     }
@@ -23,26 +25,28 @@ class DynamoCodecTest extends AnyWordSpec with Matchers with TypeCheckedTripleEq
 
       val input = Foo("theString", 42, Bar(true))
 
-      val encoded = GenericDynamoCodec[Foo].encode(input)
-      val result  = GenericDynamoCodec[Foo].decode(encoded)
+      val encoded = ObjectDynamoCodec[Foo].encode(input)
+      val result  = ObjectDynamoCodec[Foo].decode(encoded)
 
       result should ===(Right(input))
     }
 
     "encode then decode a sealed trait with two cases" in {
+      import io.moia.dynamo.generic.auto._
       sealed trait Foobar
       case class Foo(someString: String) extends Foobar
       case class Bar(someNumber: Int)    extends Foobar
 
       val input: Foobar = Foo("theString")
 
-      val encoded = GenericDynamoCodec[Foobar].encode(input)
-      val result  = GenericDynamoCodec[Foobar].decode(encoded)
+      val encoded = ObjectDynamoCodec[Foobar].encode(input)
+      val result  = ObjectDynamoCodec[Foobar].decode(encoded)
 
       result should ===(Right(input))
     }
 
     "encode then decode a sealed trait with many cases" in {
+
       sealed trait Alphabet
       case object A            extends Alphabet
       case object B            extends Alphabet
@@ -54,8 +58,8 @@ class DynamoCodecTest extends AnyWordSpec with Matchers with TypeCheckedTripleEq
       case class H(value: Int) extends Alphabet
 
       Inspectors.forAll(List[Alphabet](A, B, C, D, E, F, G, H(42))) { input =>
-        val encoded = GenericDynamoCodec[Alphabet].encode(input)
-        val result  = GenericDynamoCodec[Alphabet].decode(encoded)
+        val encoded = ObjectDynamoCodec[Alphabet].encode(input)
+        val result  = ObjectDynamoCodec[Alphabet].decode(encoded)
 
         result should ===(Right(input))
       }
@@ -68,8 +72,8 @@ class DynamoCodecTest extends AnyWordSpec with Matchers with TypeCheckedTripleEq
 
       val input: Foobar = Bar(Foo("some-string"))
 
-      val encoded = GenericDynamoCodec[Foobar].encode(input)
-      val result  = GenericDynamoCodec[Foobar].decode(encoded)
+      val encoded = ObjectDynamoCodec[Foobar].encode(input)
+      val result  = ObjectDynamoCodec[Foobar].decode(encoded)
 
       result should ===(Right(input))
     }
