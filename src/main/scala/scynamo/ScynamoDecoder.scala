@@ -27,7 +27,7 @@ object ScynamoDecodeError {
   implicit val scynamoDecodeErrorEq: Eq[ScynamoDecodeError] = Eq.fromUniversalEquals[ScynamoDecodeError]
 }
 
-trait ScynamoDecoder[A] { self =>
+trait ScynamoDecoder[A] extends ScynamoDecoderFunctions { self =>
   def decode(attributeValue: AttributeValue): EitherNec[ScynamoDecodeError, A]
 
   def map[B](f: A => B): ScynamoDecoder[B] = value => self.decode(value).map(f)
