@@ -26,9 +26,13 @@ trait ScynamoEncoderInstances {
 
   implicit val longEncoder: ScynamoEncoder[Long] = value => AttributeValue.builder().n(value.toString).build()
 
+  implicit val bigIntEncoder: ScynamoEncoder[BigInt] = value => AttributeValue.builder().n(value.toString).build()
+
   implicit val floatEncoder: ScynamoEncoder[Float] = value => AttributeValue.builder().n(value.toString).build()
 
   implicit val doubleEncoder: ScynamoEncoder[Double] = value => AttributeValue.builder().n(value.toString).build()
+
+  implicit val bigDecimalEncoder: ScynamoEncoder[BigDecimal] = value => AttributeValue.builder().n(value.toString).build()
 
   implicit val booleanEncoder: ScynamoEncoder[Boolean] = value => AttributeValue.builder().bool(value).build()
 

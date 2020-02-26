@@ -59,11 +59,17 @@ trait ScynamoDecoderInstances extends ScynamoDecoderFunctions {
   implicit val longDecoder: ScynamoDecoder[Long] =
     attributeValue => accessOrTypeMismatch(attributeValue, ScynamoNumber)(_.nOpt).flatMap(s => convert(s)(_.toLong))
 
+  implicit val bigIntDecoder: ScynamoDecoder[BigInt] =
+    attributeValue => accessOrTypeMismatch(attributeValue, ScynamoNumber)(_.nOpt).flatMap(s => convert(s)(BigInt(_)))
+
   implicit val floatDecoder: ScynamoDecoder[Float] =
     attributeValue => accessOrTypeMismatch(attributeValue, ScynamoNumber)(_.nOpt).flatMap(s => convert(s)(_.toFloat))
 
   implicit val doubleDecoder: ScynamoDecoder[Double] =
     attributeValue => accessOrTypeMismatch(attributeValue, ScynamoNumber)(_.nOpt).flatMap(s => convert(s)(_.toDouble))
+
+  implicit val bigDecimalDecoder: ScynamoDecoder[BigDecimal] =
+    attributeValue => accessOrTypeMismatch(attributeValue, ScynamoNumber)(_.nOpt).flatMap(s => convert(s)(BigDecimal(_)))
 
   implicit val booleanDecoder: ScynamoDecoder[Boolean] =
     attributeValue => accessOrTypeMismatch(attributeValue, ScynamoBool)(_.boolOpt)

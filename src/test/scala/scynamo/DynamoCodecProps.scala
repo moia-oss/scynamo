@@ -14,9 +14,13 @@ class DynamoCodecProps extends Properties("DynamoCodec") {
 
   propertyWithSeed("decode.encode === id (long)", None) = Prop.forAll { value: Long => decodeAfterEncodeIsIdentity(value) }
 
+  propertyWithSeed("decode.encode === id (BigInt)", None) = Prop.forAll { value: BigInt => decodeAfterEncodeIsIdentity(value) }
+
   propertyWithSeed("decode.encode === id (float)", None) = Prop.forAll { value: Float => decodeAfterEncodeIsIdentity(value) }
 
   propertyWithSeed("decode.encode === id (double)", None) = Prop.forAll { value: Double => decodeAfterEncodeIsIdentity(value) }
+
+  propertyWithSeed("decode.encode === id (BigDecimal)", None) = Prop.forAll { value: BigDecimal => decodeAfterEncodeIsIdentity(value) }
 
   propertyWithSeed("decode.encode === id (string)", None) = Prop.forAll { value: String => decodeAfterEncodeIsIdentity(value) }
 
