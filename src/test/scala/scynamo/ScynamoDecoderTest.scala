@@ -1,6 +1,7 @@
 package scynamo
 
 import cats.data.EitherNec
+import org.scalatest.Inside
 import scynamo.ScynamoDecoderTest.Foo
 import scynamo.ScynamoType.ScynamoString
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
@@ -31,6 +32,23 @@ class ScynamoDecoderTest extends UnitTest {
     "support custom overrides" in {
       val result = ObjectScynamoCodec[Foo].encode(Foo(42))
       result.m.get("i").s should ===(s"${Foo.prefix}42")
+    }
+
+    "return all errors" in {
+      val input = AttributeValue
+        .builder()
+        .l(
+          AttributeValue.builder().n("eins").build(),
+          AttributeValue.builder().n("zwei").build(),
+          AttributeValue.builder().n("drei").build()
+        )
+        .build()
+
+      val result = ScynamoDecoder[Seq[Int]].decode(input)
+
+      Inside.inside(result) {
+        case Left(value) => value.toNonEmptyList.toList should have size 3
+      }
     }
   }
 }
