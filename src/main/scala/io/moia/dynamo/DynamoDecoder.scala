@@ -61,9 +61,9 @@ trait DynamoDecoderInstances extends DynamoDecoderFunctions {
   implicit def instantDecoder: DynamoDecoder[Instant] =
     attributeValue =>
       for {
-        string <- accessOrTypeMismatch(attributeValue, DynamoString)(_.sOpt)
-        result <- convert(string)(Instant.parse)
-      } yield result
+        nstring <- accessOrTypeMismatch(attributeValue, DynamoString)(_.nOpt)
+        result  <- convert(nstring)(_.toLong)
+      } yield Instant.ofEpochMilli(result)
 
   implicit def seqDecoder[A: DynamoDecoder]: DynamoDecoder[Seq[A]] =
     attributeValue =>

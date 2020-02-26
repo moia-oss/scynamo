@@ -24,7 +24,7 @@ trait DynamoEncoderInstances {
 
   implicit def booleanEncoder: DynamoEncoder[Boolean] = value => AttributeValue.builder().bool(value).build()
 
-  implicit def instantEncoder: DynamoEncoder[Instant] = value => AttributeValue.builder().s(value.toString).build()
+  implicit def instantEncoder: DynamoEncoder[Instant] = value => AttributeValue.builder().n(value.toEpochMilli.toString).build()
 
   implicit def seqEncoder[A: DynamoEncoder]: DynamoEncoder[Seq[A]] =
     value => AttributeValue.builder().l(value.map(DynamoEncoder[A].encode): _*).build()
