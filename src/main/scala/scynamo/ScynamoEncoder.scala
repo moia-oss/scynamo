@@ -5,6 +5,8 @@ import java.time.Instant
 import shapeless._
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
+import scala.concurrent.duration.FiniteDuration
+
 trait ScynamoEncoder[A] { self =>
   def encode(value: A): AttributeValue
 
@@ -18,13 +20,19 @@ object ScynamoEncoder extends ScynamoEncoderInstances {
 }
 
 trait ScynamoEncoderInstances {
-  implicit def stringEncoder: ScynamoEncoder[String] = value => AttributeValue.builder().s(value).build()
+  implicit val stringEncoder: ScynamoEncoder[String] = value => AttributeValue.builder().s(value).build()
 
-  implicit def numericEncoder[A: Numeric]: ScynamoEncoder[A] = value => AttributeValue.builder().n(value.toString).build()
+  implicit val intEncoder: ScynamoEncoder[Int] = value => AttributeValue.builder().n(value.toString).build()
 
-  implicit def booleanEncoder: ScynamoEncoder[Boolean] = value => AttributeValue.builder().bool(value).build()
+  implicit val longEncoder: ScynamoEncoder[Long] = value => AttributeValue.builder().n(value.toString).build()
 
-  implicit def instantEncoder: ScynamoEncoder[Instant] = value => AttributeValue.builder().n(value.toEpochMilli.toString).build()
+  implicit val floatEncoder: ScynamoEncoder[Float] = value => AttributeValue.builder().n(value.toString).build()
+
+  implicit val doubleEncoder: ScynamoEncoder[Double] = value => AttributeValue.builder().n(value.toString).build()
+
+  implicit val booleanEncoder: ScynamoEncoder[Boolean] = value => AttributeValue.builder().bool(value).build()
+
+  implicit val instantEncoder: ScynamoEncoder[Instant] = value => AttributeValue.builder().n(value.toEpochMilli.toString).build()
 
   implicit def seqEncoder[A: ScynamoEncoder]: ScynamoEncoder[Seq[A]] =
     value => AttributeValue.builder().l(value.map(ScynamoEncoder[A].encode): _*).build()
@@ -33,6 +41,8 @@ trait ScynamoEncoderInstances {
     case Some(value) => ScynamoEncoder[A].encode(value)
     case None        => AttributeValue.builder().nul(true).build()
   }
+
+  implicit val durationEncoder: ScynamoEncoder[FiniteDuration] = longEncoder.contramap(_.toNanos)
 }
 
 trait ObjectScynamoEncoder[A] extends ScynamoEncoder[A] {

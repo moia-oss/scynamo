@@ -12,6 +12,7 @@ import cats.{Functor, SemigroupK}
 import scynamo.ScynamoType._
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
+import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.jdk.CollectionConverters._
 import scala.util.control.NonFatal
 
@@ -50,24 +51,24 @@ object ScynamoDecoder extends ScynamoDecoderInstances with ScynamoDecoderFunctio
 trait ScynamoDecoderInstances extends ScynamoDecoderFunctions {
   import scynamo.attributevalue.dsl._
 
-  implicit def stringDecoder: ScynamoDecoder[String] = attributeValue => accessOrTypeMismatch(attributeValue, ScynamoString)(_.sOpt)
+  implicit val stringDecoder: ScynamoDecoder[String] = attributeValue => accessOrTypeMismatch(attributeValue, ScynamoString)(_.sOpt)
 
-  implicit def intDecoder: ScynamoDecoder[Int] =
+  implicit val intDecoder: ScynamoDecoder[Int] =
     attributeValue => accessOrTypeMismatch(attributeValue, ScynamoNumber)(_.nOpt).flatMap(s => convert(s)(_.toInt))
 
-  implicit def longDecoder: ScynamoDecoder[Long] =
+  implicit val longDecoder: ScynamoDecoder[Long] =
     attributeValue => accessOrTypeMismatch(attributeValue, ScynamoNumber)(_.nOpt).flatMap(s => convert(s)(_.toLong))
 
-  implicit def floatDecoder: ScynamoDecoder[Float] =
+  implicit val floatDecoder: ScynamoDecoder[Float] =
     attributeValue => accessOrTypeMismatch(attributeValue, ScynamoNumber)(_.nOpt).flatMap(s => convert(s)(_.toFloat))
 
-  implicit def doubleDecoder: ScynamoDecoder[Double] =
+  implicit val doubleDecoder: ScynamoDecoder[Double] =
     attributeValue => accessOrTypeMismatch(attributeValue, ScynamoNumber)(_.nOpt).flatMap(s => convert(s)(_.toDouble))
 
-  implicit def booleanDecoder: ScynamoDecoder[Boolean] =
+  implicit val booleanDecoder: ScynamoDecoder[Boolean] =
     attributeValue => accessOrTypeMismatch(attributeValue, ScynamoBool)(_.boolOpt)
 
-  implicit def instantDecoder: ScynamoDecoder[Instant] =
+  implicit val instantDecoder: ScynamoDecoder[Instant] =
     attributeValue =>
       for {
         nstring <- accessOrTypeMismatch(attributeValue, ScynamoString)(_.nOpt)
@@ -83,12 +84,13 @@ trait ScynamoDecoderInstances extends ScynamoDecoderFunctions {
 
   implicit def optionDecoder[A: ScynamoDecoder]: ScynamoDecoder[Option[A]] =
     attributeValue => if (attributeValue.nul()) Right(None) else ScynamoDecoder[A].decode(attributeValue).map(Some(_))
+
+  implicit val durationDecoder: ScynamoDecoder[FiniteDuration] = longDecoder.map(Duration.fromNanos)
 }
 
 object ScynamoDecoderFunctions extends ScynamoDecoderFunctions
 
 trait ScynamoDecoderFunctions {
-  // TODO: make the function obsolete by matching on type
   def accessOrTypeMismatch[A](attributeValue: AttributeValue, typ: ScynamoType)(
       access: AttributeValue => Option[A]
   ): Either[NonEmptyChain[TypeMismatch], A] =

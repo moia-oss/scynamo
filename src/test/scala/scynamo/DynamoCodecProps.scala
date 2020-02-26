@@ -7,6 +7,8 @@ import org.scalacheck.Prop.propBoolean
 import org.scalacheck.{Gen, Prop, Properties}
 import scynamo.generic.semiauto._
 
+import scala.concurrent.duration.Duration
+
 class DynamoCodecProps extends Properties("DynamoCodec") {
   propertyWithSeed("decode.encode === id (int)", None) = Prop.forAll { value: Int => decodeAfterEncodeIsIdentity(value) }
 
@@ -27,6 +29,11 @@ class DynamoCodecProps extends Properties("DynamoCodec") {
   propertyWithSeed("decode.encode === id (seq)", None) = Prop.forAll { value: Seq[Int] => decodeAfterEncodeIsIdentity(value) }
 
   propertyWithSeed("decode.encode === id (option)", None) = Prop.forAll { value: Option[Int] => decodeAfterEncodeIsIdentity(value) }
+
+  propertyWithSeed("decode.encode === id (finite duration)", None) =
+    Prop.forAll(Gen.chooseNum[Long](-9223372036854775807L, 9223372036854775807L)) { value: Long =>
+      decodeAfterEncodeIsIdentity(Duration.fromNanos(value))
+    }
 
   propertyWithSeed("decode.encode === id (case class)", None) = Prop.forAll { value: Int =>
     decodeAfterEncodeIsIdentity(DynamoCodecProps.Foo(value))
