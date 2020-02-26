@@ -7,7 +7,7 @@ import cats.instances.either._
 import cats.instances.vector._
 import cats.kernel.Eq
 import cats.syntax.either._
-import cats.syntax.traverse._
+import cats.syntax.parallel._
 import cats.{Functor, SemigroupK}
 import scynamo.ScynamoType._
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
@@ -79,7 +79,7 @@ trait ScynamoDecoderInstances extends ScynamoDecoderFunctions {
     attributeValue =>
       for {
         list   <- accessOrTypeMismatch(attributeValue, ScynamoList)(_.lOpt)
-        result <- list.iterator.asScala.toVector.traverse(ScynamoDecoder[A].decode)
+        result <- list.iterator.asScala.toVector.parTraverse(ScynamoDecoder[A].decode)
       } yield result
 
   implicit def optionDecoder[A: ScynamoDecoder]: ScynamoDecoder[Option[A]] =

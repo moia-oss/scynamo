@@ -30,6 +30,8 @@ class DynamoCodecProps extends Properties("DynamoCodec") {
 
   propertyWithSeed("decode.encode === id (option)", None) = Prop.forAll { value: Option[Int] => decodeAfterEncodeIsIdentity(value) }
 
+  propertyWithSeed("decode.encode === id (some)", None) = Prop.forAll { value: Int => decodeAfterEncodeIsIdentity(Some(value)) }
+
   propertyWithSeed("decode.encode === id (finite duration)", None) =
     Prop.forAll(Gen.chooseNum[Long](-9223372036854775807L, 9223372036854775807L)) { value: Long =>
       decodeAfterEncodeIsIdentity(Duration.fromNanos(value))
