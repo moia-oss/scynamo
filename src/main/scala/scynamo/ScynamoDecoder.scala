@@ -52,12 +52,17 @@ trait ScynamoDecoderInstances extends ScynamoDecoderFunctions {
 
   implicit def stringDecoder: ScynamoDecoder[String] = attributeValue => accessOrTypeMismatch(attributeValue, ScynamoString)(_.sOpt)
 
-  implicit def numericDecoder[A](implicit N: Numeric[A]): ScynamoDecoder[A] =
-    attributeValue =>
-      for {
-        nString <- accessOrTypeMismatch(attributeValue, ScynamoNumber)(_.nOpt)
-        n       <- convert(nString)(s => N.parseString(s).get)
-      } yield n
+  implicit def intDecoder: ScynamoDecoder[Int] =
+    attributeValue => accessOrTypeMismatch(attributeValue, ScynamoNumber)(_.nOpt).flatMap(s => convert(s)(_.toInt))
+
+  implicit def longDecoder: ScynamoDecoder[Long] =
+    attributeValue => accessOrTypeMismatch(attributeValue, ScynamoNumber)(_.nOpt).flatMap(s => convert(s)(_.toLong))
+
+  implicit def floatDecoder: ScynamoDecoder[Float] =
+    attributeValue => accessOrTypeMismatch(attributeValue, ScynamoNumber)(_.nOpt).flatMap(s => convert(s)(_.toFloat))
+
+  implicit def doubleDecoder: ScynamoDecoder[Double] =
+    attributeValue => accessOrTypeMismatch(attributeValue, ScynamoNumber)(_.nOpt).flatMap(s => convert(s)(_.toDouble))
 
   implicit def booleanDecoder: ScynamoDecoder[Boolean] =
     attributeValue => accessOrTypeMismatch(attributeValue, ScynamoBool)(_.boolOpt)
@@ -83,6 +88,7 @@ trait ScynamoDecoderInstances extends ScynamoDecoderFunctions {
 object ScynamoDecoderFunctions extends ScynamoDecoderFunctions
 
 trait ScynamoDecoderFunctions {
+  // TODO: make the function obsolete by matching on type
   def accessOrTypeMismatch[A](attributeValue: AttributeValue, typ: ScynamoType)(
       access: AttributeValue => Option[A]
   ): Either[NonEmptyChain[TypeMismatch], A] =
