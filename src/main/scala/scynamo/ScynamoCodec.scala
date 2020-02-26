@@ -3,7 +3,12 @@ package scynamo
 import cats.data.EitherNec
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
-trait ScynamoCodec[A] extends ScynamoEncoder[A] with ScynamoDecoder[A]
+trait ScynamoCodec[A] extends ScynamoEncoder[A] with ScynamoDecoder[A] { self =>
+  def imap[B](f: A => B)(g: B => A): ScynamoCodec[B] = new ScynamoCodec[B] {
+    override def decode(attributeValue: AttributeValue): EitherNec[ScynamoDecodeError, B] = self.decode(attributeValue).map(f)
+    override def encode(value: B): AttributeValue                                         = self.encode(g(value))
+  }
+}
 
 object ScynamoCodec {
   def apply[A](implicit codec: ScynamoCodec[A]): ScynamoCodec[A] = codec
@@ -19,7 +24,7 @@ object ScynamoCodec {
 }
 
 trait ObjectScynamoCodec[A] extends ObjectScynamoEncoder[A] with ScynamoCodec[A] { self =>
-  def imap[B](f: A => B)(g: B => A): ObjectScynamoCodec[B] = new ObjectScynamoCodec[B] {
+  override def imap[B](f: A => B)(g: B => A): ObjectScynamoCodec[B] = new ObjectScynamoCodec[B] {
     override def decode(attributeValue: AttributeValue): EitherNec[ScynamoDecodeError, B] = self.decode(attributeValue).map(f)
     override def encodeMap(value: B): java.util.Map[String, AttributeValue]               = self.encodeMap(g(value))
   }
