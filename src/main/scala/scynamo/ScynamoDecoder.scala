@@ -95,7 +95,12 @@ trait DefaultScynamoDecoderInstances0 extends LowPrioAutoDecoder1 with ScynamoDe
   implicit def optionDecoder[A: ScynamoDecoder]: ScynamoDecoder[Option[A]] =
     attributeValue => if (attributeValue.nul()) Right(None) else ScynamoDecoder[A].decode(attributeValue).map(Some(_))
 
-  implicit val durationDecoder: ScynamoDecoder[FiniteDuration] = longDecoder.map(Duration.fromNanos)
+  implicit val finiteDurationDecoder: ScynamoDecoder[FiniteDuration] = longDecoder.map(Duration.fromNanos)
+
+  implicit val durationDecoder: ScynamoDecoder[Duration] = {
+    import scala.concurrent.duration._
+    longDecoder.map(_.nanos)
+  }
 
   implicit val uuidDecoder: ScynamoDecoder[UUID] = attributeValue =>
     accessOrTypeMismatch(attributeValue, ScynamoString)(_.sOpt).flatMap(s => convert(s)(UUID.fromString))

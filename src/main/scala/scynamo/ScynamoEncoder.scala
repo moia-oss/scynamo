@@ -8,7 +8,7 @@ import scynamo.generic.auto.AutoDerivationUnlocked
 import shapeless._
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.{Duration, FiniteDuration}
 
 trait ScynamoEncoder[A] { self =>
   def encode(value: A): AttributeValue
@@ -49,7 +49,9 @@ trait DefaultScynamoEncoderInstances0 extends LowPrioAutoEncoder1 {
     case None        => AttributeValue.builder().nul(true).build()
   }
 
-  implicit val durationEncoder: ScynamoEncoder[FiniteDuration] = longEncoder.contramap(_.toNanos)
+  implicit val finiteDurationEncoder: ScynamoEncoder[FiniteDuration] = longEncoder.contramap(_.toNanos)
+
+  implicit val durationEncoder: ScynamoEncoder[Duration] = longEncoder.contramap(_.toNanos)
 }
 
 trait LowPrioAutoEncoder1 {
