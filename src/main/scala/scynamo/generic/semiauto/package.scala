@@ -1,6 +1,6 @@
 package scynamo.generic
 
-import scynamo.{ObjectScynamoCodec, ObjectScynamoEncoder, ScynamoDecoder}
+import scynamo.{ObjectScynamoCodec, ObjectScynamoDecoder, ObjectScynamoEncoder}
 import shapeless.Lazy
 
 package object semiauto extends Semiauto
@@ -8,7 +8,7 @@ package object semiauto extends Semiauto
 trait Semiauto {
   def deriveScynamoEncoder[A](implicit genericEncoder: Lazy[GenericScynamoEncoder[A]]): ObjectScynamoEncoder[A] = genericEncoder.value
 
-  def deriveScynamoDecoder[A](implicit genericDecoder: Lazy[GenericScynamoDecoder[A]]): ScynamoDecoder[A] = genericDecoder.value
+  def deriveScynamoDecoder[A](implicit genericDecoder: Lazy[GenericScynamoDecoder[A]]): ObjectScynamoDecoder[A] = genericDecoder.value
 
   def deriveDynamoCodec[A](
       implicit

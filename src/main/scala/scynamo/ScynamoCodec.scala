@@ -1,5 +1,7 @@
 package scynamo
 
+import java.util
+
 import cats.data.EitherNec
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
@@ -23,20 +25,23 @@ object ScynamoCodec {
     }
 }
 
-trait ObjectScynamoCodec[A] extends ObjectScynamoEncoder[A] with ScynamoCodec[A] { self =>
+trait ObjectScynamoCodec[A] extends ObjectScynamoEncoder[A] with ObjectScynamoDecoder[A] with ScynamoCodec[A] { self =>
   override def imap[B](f: A => B)(g: B => A): ObjectScynamoCodec[B] = new ObjectScynamoCodec[B] {
-    override def decode(attributeValue: AttributeValue): EitherNec[ScynamoDecodeError, B] = self.decode(attributeValue).map(f)
-    override def encodeMap(value: B): java.util.Map[String, AttributeValue]               = self.encodeMap(g(value))
+    override def decode(attributeValue: AttributeValue): EitherNec[ScynamoDecodeError, B]             = self.decode(attributeValue).map(f)
+    override def encodeMap(value: B): java.util.Map[String, AttributeValue]                           = self.encodeMap(g(value))
+    override def decodeMap(value: util.Map[String, AttributeValue]): EitherNec[ScynamoDecodeError, B] = self.decodeMap(value).map(f)
   }
 }
 
 object ObjectScynamoCodec {
   def apply[A](implicit codec: ObjectScynamoCodec[A]): ObjectScynamoCodec[A] = codec
 
-  implicit def fromEncoderAndDecoder[A](implicit encoder: ObjectScynamoEncoder[A], decoder: ScynamoDecoder[A]): ObjectScynamoCodec[A] =
+  implicit def fromEncoderAndDecoder[A](
+      implicit encoder: ObjectScynamoEncoder[A],
+      decoder: ObjectScynamoDecoder[A]
+  ): ObjectScynamoCodec[A] =
     new ObjectScynamoCodec[A] {
-      override def encodeMap(a: A): java.util.Map[String, AttributeValue] = encoder.encodeMap(a)
-
-      override def decode(value: AttributeValue): EitherNec[ScynamoDecodeError, A] = decoder.decode(value)
+      override def encodeMap(a: A): java.util.Map[String, AttributeValue]                               = encoder.encodeMap(a)
+      override def decodeMap(value: util.Map[String, AttributeValue]): EitherNec[ScynamoDecodeError, A] = decoder.decodeMap(value)
     }
 }

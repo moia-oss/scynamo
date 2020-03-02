@@ -102,7 +102,7 @@ object ScynamoDecoder extends ScynamoDecoderFunctions with LowPrioAutoDecoder {
 trait LowPrioAutoDecoder {
   final implicit def autoDerivedScynamoDecoder[A: AutoDerivationUnlocked](
       implicit genericDecoder: Lazy[GenericScynamoDecoder[A]]
-  ): ScynamoDecoder[A] =
+  ): ObjectScynamoDecoder[A] =
     scynamo.generic.semiauto.deriveScynamoDecoder[A]
 }
 
@@ -123,4 +123,18 @@ trait ScynamoDecoderFunctions {
     } catch {
       case NonFatal(e) => Either.leftNec(ParseError(s"Could not convert: ${e.getMessage}", Some(e)))
     }
+}
+
+trait ObjectScynamoDecoder[A] extends ScynamoDecoder[A] {
+  import scynamo.attributevalue.dsl._
+  override def decode(attributeValue: AttributeValue): EitherNec[ScynamoDecodeError, A] = attributeValue.mOpt match {
+    case Some(value) => decodeMap(value)
+    case None        => Either.leftNec(TypeMismatch(ScynamoMap, attributeValue))
+  }
+
+  def decodeMap(value: java.util.Map[String, AttributeValue]): EitherNec[ScynamoDecodeError, A]
+}
+
+object ObjectScynamoDecoder {
+  def apply[A](implicit instance: ObjectScynamoDecoder[A]): ObjectScynamoDecoder[A] = instance
 }
