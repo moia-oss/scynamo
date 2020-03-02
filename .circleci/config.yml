@@ -72,3 +72,4 @@ workflows:
             branches:
               only:
                 - master
+                - init
