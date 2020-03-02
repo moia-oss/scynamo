@@ -24,7 +24,7 @@ class ScynamoEncoderTest extends UnitTest {
     "auto derivation works" in {
       case class TestClass(someInteger: Int)
 
-      val result = ScynamoEncoder[TestClass].encode(TestClass(42))
+      val result = ScynamoEncoder[Option[TestClass]].encode(Some(TestClass(42)))
 
       result.m.get("someInteger").n should ===("42")
     }
