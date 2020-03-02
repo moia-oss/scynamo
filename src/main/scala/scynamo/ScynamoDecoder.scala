@@ -79,7 +79,7 @@ object ScynamoDecoder extends ScynamoDecoderFunctions with LowPrioAutoDecoder {
   implicit val instantDecoder: ScynamoDecoder[Instant] =
     attributeValue =>
       for {
-        nstring <- accessOrTypeMismatch(attributeValue, ScynamoString)(_.nOpt)
+        nstring <- accessOrTypeMismatch(attributeValue, ScynamoNumber)(_.nOpt)
         result  <- convert(nstring)(_.toLong)
       } yield Instant.ofEpochMilli(result)
 
