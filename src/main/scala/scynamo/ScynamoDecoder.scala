@@ -11,6 +11,9 @@ import cats.syntax.either._
 import cats.syntax.parallel._
 import cats.{Functor, SemigroupK}
 import scynamo.ScynamoType._
+import scynamo.generic.GenericScynamoDecoder
+import scynamo.generic.auto.AutoDerivationUnlocked
+import shapeless.Lazy
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
@@ -38,7 +41,7 @@ trait ScynamoDecoder[A] extends ScynamoDecoderFunctions { self =>
     (attributeValue: AttributeValue) => self.decode(attributeValue).orElse(other.decode(attributeValue))
 }
 
-object ScynamoDecoder extends ScynamoDecoderInstances with ScynamoDecoderFunctions {
+object ScynamoDecoder extends ScynamoDecoderFunctions with LowPrioAutoDecoder {
   def apply[A](implicit instance: ScynamoDecoder[A]): ScynamoDecoder[A] = instance
 
   implicit val catsInstances: Functor[ScynamoDecoder] with SemigroupK[ScynamoDecoder] =
@@ -47,9 +50,7 @@ object ScynamoDecoder extends ScynamoDecoderInstances with ScynamoDecoderFunctio
 
       override def combineK[A](x: ScynamoDecoder[A], y: ScynamoDecoder[A]): ScynamoDecoder[A] = x.orElse(y)
     }
-}
 
-trait ScynamoDecoderInstances extends ScynamoDecoderFunctions {
   import scynamo.attributevalue.dsl._
 
   implicit val stringDecoder: ScynamoDecoder[String] = attributeValue => accessOrTypeMismatch(attributeValue, ScynamoString)(_.sOpt)
@@ -96,6 +97,13 @@ trait ScynamoDecoderInstances extends ScynamoDecoderFunctions {
 
   implicit val uuidDecoder: ScynamoDecoder[UUID] = attributeValue =>
     accessOrTypeMismatch(attributeValue, ScynamoString)(_.sOpt).flatMap(s => convert(s)(UUID.fromString))
+}
+
+trait LowPrioAutoDecoder {
+  final implicit def autoDerivedScynamoDecoder[A: AutoDerivationUnlocked](
+      implicit genericDecoder: Lazy[GenericScynamoDecoder[A]]
+  ): ScynamoDecoder[A] =
+    scynamo.generic.semiauto.deriveScynamoDecoder[A]
 }
 
 object ScynamoDecoderFunctions extends ScynamoDecoderFunctions

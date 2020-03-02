@@ -3,6 +3,8 @@ package scynamo
 import java.time.Instant
 import java.util.UUID
 
+import scynamo.generic.GenericScynamoEncoder
+import scynamo.generic.auto.AutoDerivationUnlocked
 import shapeless._
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
@@ -14,13 +16,9 @@ trait ScynamoEncoder[A] { self =>
   def contramap[B](f: B => A): ScynamoEncoder[B] = value => self.encode(f(value))
 }
 
-object ScynamoEncoder extends ScynamoEncoderInstances {
+object ScynamoEncoder extends LowPrioAutoEncoder {
   def apply[A](implicit instance: ScynamoEncoder[A]): ScynamoEncoder[A] = instance
 
-  implicit def fromObject[A](implicit instance: Lazy[ObjectScynamoEncoder[A]]): ScynamoEncoder[A] = instance.value
-}
-
-trait ScynamoEncoderInstances {
   implicit val stringEncoder: ScynamoEncoder[String] = value => AttributeValue.builder().s(value).build()
 
   implicit val intEncoder: ScynamoEncoder[Int] = value => AttributeValue.builder().n(value.toString).build()
@@ -50,6 +48,13 @@ trait ScynamoEncoderInstances {
   }
 
   implicit val durationEncoder: ScynamoEncoder[FiniteDuration] = longEncoder.contramap(_.toNanos)
+}
+
+trait LowPrioAutoEncoder {
+  final implicit def autoDerivedScynamoEncoder[A: AutoDerivationUnlocked](
+      implicit genericEncoder: Lazy[GenericScynamoEncoder[A]]
+  ): ObjectScynamoEncoder[A] =
+    scynamo.generic.semiauto.deriveScynamoEncoder[A]
 }
 
 trait ObjectScynamoEncoder[A] extends ScynamoEncoder[A] {
