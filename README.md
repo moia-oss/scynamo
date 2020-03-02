@@ -1,5 +1,37 @@
 # Scynamo - Library to convert between DynamoDB and Scala types
 
+## Documentation
+
+### Derivation of ScynamoCodec
+
+For the `ScynamoEncoder`, `ScynamoDecoder` and `ScynamoCodec` `scynamo` supports both both `semiauto` and `auto` derivation.
+
+#### Semiautomatic Derivation
+
+```scala
+import scynamo.generic.semiauto._
+
+clase class Foo(i: Int, s: String)
+
+object Foo {
+  implicit val codec: ObjectScynamoCodec[Foo] = deriveDynamoCodec[Foo]
+}
+```
+
+#### Automatic Derivation
+```scala
+import scynamo.generic.auto._
+
+clase class Foo(i: Int, s: String)
+
+// and it automagically works
+val codec = implicitly[ObjectScynamoCodec[Foo]]
+```
+
+NOTE: auto derivation does not respect custom overrides of
+Encoders/Decoders.  If you need that functionality, use `semiauto`
+derivation instead.
+
 ## Release
 
 Every new commit in master is built and released as a -SNAPSHOT. Once you tested that everything works, do the following to create an actual release.
