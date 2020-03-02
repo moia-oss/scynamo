@@ -41,9 +41,11 @@ trait ScynamoDecoder[A] extends ScynamoDecoderFunctions { self =>
     (attributeValue: AttributeValue) => self.decode(attributeValue).orElse(other.decode(attributeValue))
 }
 
-object ScynamoDecoder extends ScynamoDecoderFunctions with LowPrioAutoDecoder {
+object ScynamoDecoder extends DefaultScynamoDecoderInstances0 {
   def apply[A](implicit instance: ScynamoDecoder[A]): ScynamoDecoder[A] = instance
+}
 
+trait DefaultScynamoDecoderInstances0 extends LowPrioAutoDecoder1 with ScynamoDecoderFunctions {
   implicit val catsInstances: Functor[ScynamoDecoder] with SemigroupK[ScynamoDecoder] =
     new Functor[ScynamoDecoder] with SemigroupK[ScynamoDecoder] {
       override def map[A, B](fa: ScynamoDecoder[A])(f: A => B): ScynamoDecoder[B] = fa.map(f)
@@ -99,7 +101,7 @@ object ScynamoDecoder extends ScynamoDecoderFunctions with LowPrioAutoDecoder {
     accessOrTypeMismatch(attributeValue, ScynamoString)(_.sOpt).flatMap(s => convert(s)(UUID.fromString))
 }
 
-trait LowPrioAutoDecoder {
+trait LowPrioAutoDecoder1 {
   final implicit def autoDerivedScynamoDecoder[A: AutoDerivationUnlocked](
       implicit genericDecoder: Lazy[GenericScynamoDecoder[A]]
   ): ObjectScynamoDecoder[A] =

@@ -16,9 +16,11 @@ trait ScynamoEncoder[A] { self =>
   def contramap[B](f: B => A): ScynamoEncoder[B] = value => self.encode(f(value))
 }
 
-object ScynamoEncoder extends LowPrioAutoEncoder {
+object ScynamoEncoder extends DefaultScynamoEncoderInstances0 {
   def apply[A](implicit instance: ScynamoEncoder[A]): ScynamoEncoder[A] = instance
+}
 
+trait DefaultScynamoEncoderInstances0 extends LowPrioAutoEncoder1 {
   implicit val stringEncoder: ScynamoEncoder[String] = value => AttributeValue.builder().s(value).build()
 
   implicit val intEncoder: ScynamoEncoder[Int] = value => AttributeValue.builder().n(value.toString).build()
@@ -50,7 +52,7 @@ object ScynamoEncoder extends LowPrioAutoEncoder {
   implicit val durationEncoder: ScynamoEncoder[FiniteDuration] = longEncoder.contramap(_.toNanos)
 }
 
-trait LowPrioAutoEncoder {
+trait LowPrioAutoEncoder1 {
   final implicit def autoDerivedScynamoEncoder[A: AutoDerivationUnlocked](
       implicit genericEncoder: Lazy[GenericScynamoEncoder[A]]
   ): ObjectScynamoEncoder[A] =
