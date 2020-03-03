@@ -104,6 +104,12 @@ trait DefaultScynamoDecoderInstances0 extends LowPrioAutoDecoder1 with ScynamoDe
 
   implicit val uuidDecoder: ScynamoDecoder[UUID] = attributeValue =>
     accessOrTypeMismatch(attributeValue, ScynamoString)(_.sOpt).flatMap(s => convert(s)(UUID.fromString))
+
+  implicit def mapDecoder[A](implicit valueDecoder: ScynamoDecoder[A]): ScynamoDecoder[Map[String, A]] =
+    attributeValue =>
+      accessOrTypeMismatch(attributeValue, ScynamoMap)(_.mOpt).flatMap { javaMap =>
+        javaMap.asScala.toVector.parTraverse { case (key, value) => valueDecoder.decode(value).map(key -> _) }.map(_.toMap)
+      }
 }
 
 trait LowPrioAutoDecoder1 {

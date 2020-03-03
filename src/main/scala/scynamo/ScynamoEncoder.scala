@@ -52,6 +52,16 @@ trait DefaultScynamoEncoderInstances0 extends LowPrioAutoEncoder1 {
   implicit val finiteDurationEncoder: ScynamoEncoder[FiniteDuration] = longEncoder.contramap(_.toNanos)
 
   implicit val durationEncoder: ScynamoEncoder[Duration] = longEncoder.contramap(_.toNanos)
+
+  implicit def mapEncoder[A](implicit valueEncoder: ScynamoEncoder[A]): ScynamoEncoder[Map[String, A]] =
+    value => {
+      val hm = value.toVector.map { case (k, v) => k -> valueEncoder.encode(v) }.foldLeft(new java.util.HashMap[String, AttributeValue]()) {
+        case (acc, (k, v)) =>
+          acc.put(k, v)
+          acc
+      }
+      AttributeValue.builder().m(hm).build()
+    }
 }
 
 trait LowPrioAutoEncoder1 {
