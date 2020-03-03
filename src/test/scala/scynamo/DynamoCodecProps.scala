@@ -31,7 +31,9 @@ class DynamoCodecProps extends Properties("DynamoCodec") {
     decodeAfterEncodeIsIdentity(value)
   }
 
-  propertyWithSeed("decode.encode === id (seq)", None) = Prop.forAll { value: Seq[Int] => decodeAfterEncodeIsIdentity(value) }
+  propertyWithSeed("decode.encode === id (seq)", None) = Prop.forAll { value: scala.collection.immutable.Seq[Int] =>
+    decodeAfterEncodeIsIdentity(value)
+  }
 
   propertyWithSeed("decode.encode === id (option)", None) = Prop.forAll { value: Option[Int] => decodeAfterEncodeIsIdentity(value) }
 

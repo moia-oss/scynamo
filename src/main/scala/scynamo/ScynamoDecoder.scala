@@ -85,7 +85,7 @@ trait DefaultScynamoDecoderInstances0 extends LowPrioAutoDecoder1 with ScynamoDe
         result  <- convert(nstring)(_.toLong)
       } yield Instant.ofEpochMilli(result)
 
-  implicit def seqDecoder[A: ScynamoDecoder]: ScynamoDecoder[Seq[A]] =
+  implicit def seqDecoder[A: ScynamoDecoder]: ScynamoDecoder[scala.collection.immutable.Seq[A]] =
     attributeValue =>
       for {
         list   <- accessOrTypeMismatch(attributeValue, ScynamoList)(_.lOpt)

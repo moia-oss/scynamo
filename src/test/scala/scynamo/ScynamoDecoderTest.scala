@@ -36,7 +36,7 @@ class ScynamoDecoderTest extends UnitTest {
         )
         .build()
 
-      val result = ScynamoDecoder[Seq[Int]].decode(input)
+      val result = ScynamoDecoder[scala.collection.immutable.Seq[Int]].decode(input)
 
       Inside.inside(result) {
         case Left(value) => value.toNonEmptyList.toList should have size 3

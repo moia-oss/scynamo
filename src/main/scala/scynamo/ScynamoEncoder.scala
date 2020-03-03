@@ -41,7 +41,7 @@ trait DefaultScynamoEncoderInstances0 extends LowPrioAutoEncoder1 {
 
   implicit val uuidEncoder: ScynamoEncoder[UUID] = value => AttributeValue.builder().s(value.toString).build()
 
-  implicit def seqEncoder[A: ScynamoEncoder]: ScynamoEncoder[Seq[A]] =
+  implicit def seqEncoder[A: ScynamoEncoder]: ScynamoEncoder[scala.collection.immutable.Seq[A]] =
     value => AttributeValue.builder().l(value.map(ScynamoEncoder[A].encode): _*).build()
 
   implicit def optionEncoder[A: ScynamoEncoder]: ScynamoEncoder[Option[A]] = {
