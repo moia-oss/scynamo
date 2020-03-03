@@ -3,9 +3,9 @@ package scynamo
 import java.time.Instant
 import java.util.UUID
 
-import DynamoCodecProps.Shape
 import org.scalacheck.Prop.propBoolean
 import org.scalacheck.{Gen, Prop, Properties}
+import scynamo.DynamoCodecProps.Shape
 import scynamo.generic.semiauto._
 
 import scala.concurrent.duration.Duration
@@ -34,6 +34,12 @@ class DynamoCodecProps extends Properties("DynamoCodec") {
   propertyWithSeed("decode.encode === id (seq)", None) = Prop.forAll { value: scala.collection.immutable.Seq[Int] =>
     decodeAfterEncodeIsIdentity(value)
   }
+
+  propertyWithSeed("decode.encode === id (list)", None) = Prop.forAll { value: List[Int] => decodeAfterEncodeIsIdentity(value) }
+
+  propertyWithSeed("decode.encode === id (vector)", None) = Prop.forAll { value: Vector[Int] => decodeAfterEncodeIsIdentity(value) }
+
+  propertyWithSeed("decode.encode === id (set)", None) = Prop.forAll { value: Set[Int] => decodeAfterEncodeIsIdentity(value) }
 
   propertyWithSeed("decode.encode === id (option)", None) = Prop.forAll { value: Option[Int] => decodeAfterEncodeIsIdentity(value) }
 

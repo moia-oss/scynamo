@@ -16,6 +16,7 @@ import scynamo.generic.auto.AutoDerivationUnlocked
 import shapeless.Lazy
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
+import scala.collection.compat._
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.jdk.CollectionConverters._
 import scala.util.control.NonFatal
@@ -41,11 +42,11 @@ trait ScynamoDecoder[A] extends ScynamoDecoderFunctions { self =>
     (attributeValue: AttributeValue) => self.decode(attributeValue).orElse(other.decode(attributeValue))
 }
 
-object ScynamoDecoder extends DefaultScynamoDecoderInstances0 {
+object ScynamoDecoder extends DefaultScynamoDecoderInstances {
   def apply[A](implicit instance: ScynamoDecoder[A]): ScynamoDecoder[A] = instance
 }
 
-trait DefaultScynamoDecoderInstances0 extends LowPrioAutoDecoder1 with ScynamoDecoderFunctions {
+trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with ScynamoIterableDecoder {
   implicit val catsInstances: Functor[ScynamoDecoder] with SemigroupK[ScynamoDecoder] =
     new Functor[ScynamoDecoder] with SemigroupK[ScynamoDecoder] {
       override def map[A, B](fa: ScynamoDecoder[A])(f: A => B): ScynamoDecoder[B] = fa.map(f)
@@ -85,12 +86,13 @@ trait DefaultScynamoDecoderInstances0 extends LowPrioAutoDecoder1 with ScynamoDe
         result  <- convert(nstring)(_.toLong)
       } yield Instant.ofEpochMilli(result)
 
-  implicit def seqDecoder[A: ScynamoDecoder]: ScynamoDecoder[scala.collection.immutable.Seq[A]] =
-    attributeValue =>
-      for {
-        list   <- accessOrTypeMismatch(attributeValue, ScynamoList)(_.lOpt)
-        result <- list.iterator.asScala.toVector.parTraverse(ScynamoDecoder[A].decode)
-      } yield result
+  implicit def seqDecoder[A: ScynamoDecoder]: ScynamoDecoder[scala.collection.immutable.Seq[A]] = iterableDecoder
+
+  implicit def listDecoder[A: ScynamoDecoder]: ScynamoDecoder[List[A]] = iterableDecoder
+
+  implicit def vectorDecoder[A: ScynamoDecoder]: ScynamoDecoder[Vector[A]] = iterableDecoder
+
+  implicit def setDecoder[A: ScynamoDecoder]: ScynamoDecoder[Set[A]] = iterableDecoder
 
   implicit def optionDecoder[A: ScynamoDecoder]: ScynamoDecoder[Option[A]] =
     attributeValue => if (attributeValue.nul()) Right(None) else ScynamoDecoder[A].decode(attributeValue).map(Some(_))
@@ -112,7 +114,26 @@ trait DefaultScynamoDecoderInstances0 extends LowPrioAutoDecoder1 with ScynamoDe
       }
 }
 
-trait LowPrioAutoDecoder1 {
+trait ScynamoIterableDecoder extends LowestPrioAutoDecoder {
+  import scynamo.attributevalue.dsl._
+  def iterableDecoder[A: ScynamoDecoder, C[_] <: Iterable[A], X](implicit factory: Factory[A, C[A]]): ScynamoDecoder[C[A]] =
+    attributeValue =>
+      attributeValue.lOpt match {
+        case Some(theList) =>
+          val builder = factory.newBuilder
+          var elems   = Either.rightNec[ScynamoDecodeError, builder.type](builder)
+
+          theList.forEach { elem =>
+            val decoded = ScynamoDecoder[A].decode(elem)
+            elems = (elems, decoded).parMapN((builder, dec) => builder += dec)
+          }
+
+          elems.map(_.result())
+        case None => Either.leftNec(TypeMismatch(ScynamoList, attributeValue))
+      }
+}
+
+trait LowestPrioAutoDecoder {
   final implicit def autoDerivedScynamoDecoder[A: AutoDerivationUnlocked](
       implicit genericDecoder: Lazy[GenericScynamoDecoder[A]]
   ): ObjectScynamoDecoder[A] =

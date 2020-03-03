@@ -3,6 +3,7 @@ package scynamo
 import java.time.Instant
 import java.util.UUID
 
+import scala.jdk.CollectionConverters._
 import scynamo.generic.GenericScynamoEncoder
 import scynamo.generic.auto.AutoDerivationUnlocked
 import shapeless._
@@ -16,11 +17,11 @@ trait ScynamoEncoder[A] { self =>
   def contramap[B](f: B => A): ScynamoEncoder[B] = value => self.encode(f(value))
 }
 
-object ScynamoEncoder extends DefaultScynamoEncoderInstances0 {
+object ScynamoEncoder extends DefaultScynamoEncoderInstances {
   def apply[A](implicit instance: ScynamoEncoder[A]): ScynamoEncoder[A] = instance
 }
 
-trait DefaultScynamoEncoderInstances0 extends LowPrioAutoEncoder1 {
+trait DefaultScynamoEncoderInstances extends ScynamoIterableEncoder {
   implicit val stringEncoder: ScynamoEncoder[String] = value => AttributeValue.builder().s(value).build()
 
   implicit val intEncoder: ScynamoEncoder[Int] = value => AttributeValue.builder().n(value.toString).build()
@@ -44,6 +45,15 @@ trait DefaultScynamoEncoderInstances0 extends LowPrioAutoEncoder1 {
   implicit def seqEncoder[A: ScynamoEncoder]: ScynamoEncoder[scala.collection.immutable.Seq[A]] =
     value => AttributeValue.builder().l(value.map(ScynamoEncoder[A].encode): _*).build()
 
+  implicit def listEncoder[A: ScynamoEncoder]: ScynamoEncoder[List[A]] =
+    value => AttributeValue.builder().l(value.map(ScynamoEncoder[A].encode): _*).build()
+
+  implicit def vectorEncoder[A: ScynamoEncoder]: ScynamoEncoder[Vector[A]] =
+    value => AttributeValue.builder().l(value.map(ScynamoEncoder[A].encode): _*).build()
+
+  implicit def setEncoder[A: ScynamoEncoder]: ScynamoEncoder[Set[A]] =
+    value => AttributeValue.builder().l(value.map(ScynamoEncoder[A].encode).toList: _*).build()
+
   implicit def optionEncoder[A: ScynamoEncoder]: ScynamoEncoder[Option[A]] = {
     case Some(value) => ScynamoEncoder[A].encode(value)
     case None        => AttributeValue.builder().nul(true).build()
@@ -64,7 +74,15 @@ trait DefaultScynamoEncoderInstances0 extends LowPrioAutoEncoder1 {
     }
 }
 
-trait LowPrioAutoEncoder1 {
+trait ScynamoIterableEncoder extends LowestPrioAutoEncoder {
+  def iterableEncoder[A: ScynamoEncoder]: ScynamoEncoder[Iterable[A]] =
+    value => {
+      val encodedValues = value.map(ScynamoEncoder[A].encode)
+      AttributeValue.builder().l(encodedValues.toList.asJava).build()
+    }
+}
+
+trait LowestPrioAutoEncoder {
   final implicit def autoDerivedScynamoEncoder[A: AutoDerivationUnlocked](
       implicit genericEncoder: Lazy[GenericScynamoEncoder[A]]
   ): ObjectScynamoEncoder[A] =
