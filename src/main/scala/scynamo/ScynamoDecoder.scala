@@ -22,7 +22,6 @@ import scala.jdk.CollectionConverters._
 import scala.util.control.NonFatal
 
 abstract class ScynamoDecodeError                                                            extends Product with Serializable
-case class MissingField(fieldName: String, attributeValue: AttributeValue)                   extends ScynamoDecodeError
 case class MissingFieldInMap(fieldName: String, hmap: java.util.Map[String, AttributeValue]) extends ScynamoDecodeError
 case class TypeMismatch(expected: ScynamoType, attributeValue: AttributeValue)               extends ScynamoDecodeError
 case class InvalidCase(hmap: java.util.Map[String, AttributeValue])                          extends ScynamoDecodeError
