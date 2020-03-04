@@ -26,6 +26,7 @@ case class MissingFieldInMap(fieldName: String, hmap: java.util.Map[String, Attr
 case class TypeMismatch(expected: ScynamoType, attributeValue: AttributeValue)               extends ScynamoDecodeError
 case class InvalidCase(hmap: java.util.Map[String, AttributeValue])                          extends ScynamoDecodeError
 case class ParseError(message: String, cause: Option[Throwable])                             extends ScynamoDecodeError
+case class GeneralError(message: String, cause: Option[Throwable])                           extends ScynamoDecodeError
 
 object ScynamoDecodeError {
   implicit val scynamoDecodeErrorEq: Eq[ScynamoDecodeError] = Eq.fromUniversalEquals[ScynamoDecodeError]
@@ -109,7 +110,7 @@ trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with Scynam
     attributeValue =>
       accessOrTypeMismatch(attributeValue, ScynamoMap)(_.mOpt).flatMap { javaMap =>
         javaMap.asScala.toVector.parTraverse { case (key, value) => valueDecoder.decode(value).map(key -> _) }.map(_.toMap)
-      }
+    }
 }
 
 trait ScynamoIterableDecoder extends LowestPrioAutoDecoder {
@@ -128,7 +129,7 @@ trait ScynamoIterableDecoder extends LowestPrioAutoDecoder {
 
           elems.map(_.result())
         case None => Either.leftNec(TypeMismatch(ScynamoList, attributeValue))
-      }
+    }
 }
 
 trait LowestPrioAutoDecoder {
