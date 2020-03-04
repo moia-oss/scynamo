@@ -39,6 +39,9 @@ trait ScynamoDecoder[A] extends ScynamoDecoderFunctions { self =>
 
   def orElse[AA >: A](other: ScynamoDecoder[A]): ScynamoDecoder[AA] =
     (attributeValue: AttributeValue) => self.decode(attributeValue).orElse(other.decode(attributeValue))
+
+  def transform[B](f: EitherNec[ScynamoDecodeError, A] => EitherNec[ScynamoDecodeError, B]): ScynamoDecoder[B] =
+    attributeValue => f(self.decode(attributeValue))
 }
 
 object ScynamoDecoder extends DefaultScynamoDecoderInstances {
@@ -110,7 +113,7 @@ trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with Scynam
     attributeValue =>
       accessOrTypeMismatch(attributeValue, ScynamoMap)(_.mOpt).flatMap { javaMap =>
         javaMap.asScala.toVector.parTraverse { case (key, value) => valueDecoder.decode(value).map(key -> _) }.map(_.toMap)
-    }
+      }
 }
 
 trait ScynamoIterableDecoder extends LowestPrioAutoDecoder {
@@ -129,7 +132,7 @@ trait ScynamoIterableDecoder extends LowestPrioAutoDecoder {
 
           elems.map(_.result())
         case None => Either.leftNec(TypeMismatch(ScynamoList, attributeValue))
-    }
+      }
 }
 
 trait LowestPrioAutoDecoder {
