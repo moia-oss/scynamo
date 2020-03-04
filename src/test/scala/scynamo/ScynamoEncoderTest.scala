@@ -51,7 +51,7 @@ object ScynamoEncoderTest {
         accessOrTypeMismatch(attributeValue, ScynamoString)(_.sOpt).map(_.stripPrefix(prefix).toInt)
     }
 
-    implicit val fooCodec: ObjectScynamoCodec[Foo] = scynamo.generic.semiauto.deriveDynamoCodec[Foo]
+    implicit val fooCodec: ObjectScynamoCodec[Foo] = scynamo.generic.semiauto.deriveScynamoCodec[Foo]
   }
 
   case class Foo2(i: Int)

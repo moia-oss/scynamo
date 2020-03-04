@@ -75,24 +75,24 @@ class DynamoCodecProps extends Properties("DynamoCodec") {
 object DynamoCodecProps {
   case class Foo(intAttribute: Int)
   object Foo {
-    implicit val instance: ObjectScynamoCodec[Foo] = deriveDynamoCodec[Foo]
+    implicit val instance: ObjectScynamoCodec[Foo] = deriveScynamoCodec[Foo]
   }
 
   sealed trait Shape
   case class Square(size: Int) extends Shape
 
   object Square {
-    implicit val instance: ObjectScynamoCodec[Square] = deriveDynamoCodec[Square]
+    implicit val instance: ObjectScynamoCodec[Square] = deriveScynamoCodec[Square]
   }
 
   case class Rectangle(width: Int, height: Int) extends Shape
 
   object Rectangle {
-    implicit val instance: ObjectScynamoCodec[Rectangle] = deriveDynamoCodec[Rectangle]
+    implicit val instance: ObjectScynamoCodec[Rectangle] = deriveScynamoCodec[Rectangle]
   }
 
   object Shape {
-    implicit val instance: ObjectScynamoCodec[Shape] = deriveDynamoCodec[Shape]
+    implicit val instance: ObjectScynamoCodec[Shape] = deriveScynamoCodec[Shape]
     val squareGen: Gen[Square]                       = Gen.posNum[Int].map(Square(_))
     val rectangleGen: Gen[Rectangle] = for {
       w <- Gen.posNum[Int]

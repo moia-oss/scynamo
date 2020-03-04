@@ -10,7 +10,7 @@ trait Semiauto {
 
   def deriveScynamoDecoder[A](implicit genericDecoder: Lazy[GenericScynamoDecoder[A]]): ObjectScynamoDecoder[A] = genericDecoder.value
 
-  def deriveDynamoCodec[A](
+  def deriveScynamoCodec[A](
       implicit
       genericEncoder: GenericScynamoEncoder[A],
       genericDecoder: GenericScynamoDecoder[A]

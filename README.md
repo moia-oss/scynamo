@@ -14,7 +14,7 @@ import scynamo.generic.semiauto._
 clase class Foo(i: Int, s: String)
 
 object Foo {
-  implicit val codec: ObjectScynamoCodec[Foo] = deriveDynamoCodec[Foo]
+  implicit val codec: ObjectScynamoCodec[Foo] = deriveScynamoCodec[Foo]
 }
 ```
 
