@@ -67,5 +67,15 @@ class ScynamoDecoderTest extends UnitTest {
 
       resultNested should ===(Right(Foo(42)))
     }
+
+    "decode missing attributes" in {
+      import scynamo.generic.auto._
+      case class Foo(a: String, b: Option[String])
+      val input = AttributeValue.builder().m(Collections.singletonMap("a", AttributeValue.builder().s("the-a").build())).build()
+
+      val result = ScynamoDecoder[Foo].decode(input)
+
+      result should ===(Right(Foo("the-a", None)))
+    }
   }
 }

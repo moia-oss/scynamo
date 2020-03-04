@@ -27,12 +27,13 @@ trait DecoderHListInstances extends ScynamoDecoderFunctions {
       st: Lazy[ShapelessScynamoDecoder[T]]
   ): ShapelessScynamoDecoder[FieldType[K, V] :: T] =
     value => {
-      val decodedHead = for {
-        fieldAttrValue <- Option(value.get(key.value.name))
-          .map(Right(_))
-          .getOrElse(Either.leftNec(MissingFieldInMap(key.value.name, value)))
-        result <- sv.value.decode(fieldAttrValue)
-      } yield result
+      val fieldAttrValue = Option(value.get(key.value.name))
+
+      val decodedHead = (fieldAttrValue, sv.value.defaultValue) match {
+        case (Some(field), _)      => sv.value.decode(field)
+        case (None, Some(default)) => Right(default)
+        case (None, None)          => Either.leftNec(MissingFieldInMap(key.value.name, value))
+      }
 
       (decodedHead.map(field[K](_)), st.value.decodeMap(value)).mapN(_ :: _)
     }

@@ -42,6 +42,8 @@ trait ScynamoDecoder[A] extends ScynamoDecoderFunctions { self =>
 
   def transform[B](f: EitherNec[ScynamoDecodeError, A] => EitherNec[ScynamoDecodeError, B]): ScynamoDecoder[B] =
     attributeValue => f(self.decode(attributeValue))
+
+  def defaultValue: Option[A] = None
 }
 
 object ScynamoDecoder extends DefaultScynamoDecoderInstances {
@@ -96,8 +98,12 @@ trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with Scynam
 
   implicit def setDecoder[A: ScynamoDecoder]: ScynamoDecoder[Set[A]] = iterableDecoder
 
-  implicit def optionDecoder[A: ScynamoDecoder]: ScynamoDecoder[Option[A]] =
-    attributeValue => if (attributeValue.nul()) Right(None) else ScynamoDecoder[A].decode(attributeValue).map(Some(_))
+  implicit def optionDecoder[A: ScynamoDecoder]: ScynamoDecoder[Option[A]] = new ScynamoDecoder[Option[A]] {
+    override def decode(attributeValue: AttributeValue): EitherNec[ScynamoDecodeError, Option[A]] =
+      if (attributeValue.nul()) Right(None) else ScynamoDecoder[A].decode(attributeValue).map(Some(_))
+
+    override def defaultValue: Option[Option[A]] = Some(None)
+  }
 
   implicit val finiteDurationDecoder: ScynamoDecoder[FiniteDuration] = longDecoder.map(Duration.fromNanos)
 
