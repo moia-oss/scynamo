@@ -1,5 +1,7 @@
 package scynamo
 
+import java.util.Collections
+
 import org.scalatest.Inside
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
@@ -41,6 +43,29 @@ class ScynamoDecoderTest extends UnitTest {
       Inside.inside(result) {
         case Left(value) => value.toNonEmptyList.toList should have size 3
       }
+    }
+
+    "support the nested type tag when decoding" in {
+      import scynamo.generic.auto._
+
+      sealed trait Test
+      case class Foo(i: Int)    extends Test
+      case class Bar(s: String) extends Test
+
+      val inputNestedFormat = AttributeValue
+        .builder()
+        .m(
+          Collections
+            .singletonMap(
+              "Foo",
+              AttributeValue.builder().m(Collections.singletonMap("i", AttributeValue.builder().n("42").build())).build()
+            )
+        )
+        .build()
+
+      val resultNested = ScynamoDecoder[Test].decode(inputNestedFormat)
+
+      resultNested should ===(Right(Foo(42)))
     }
   }
 }

@@ -53,7 +53,7 @@ trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with Scynam
       override def combineK[A](x: ScynamoDecoder[A], y: ScynamoDecoder[A]): ScynamoDecoder[A] = x.orElse(y)
     }
 
-  import scynamo.attributevalue.dsl._
+  import scynamo.dsl.attributevalue._
 
   implicit val stringDecoder: ScynamoDecoder[String] = attributeValue => accessOrTypeMismatch(attributeValue, ScynamoString)(_.sOpt)
 
@@ -114,7 +114,7 @@ trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with Scynam
 }
 
 trait ScynamoIterableDecoder extends LowestPrioAutoDecoder {
-  import scynamo.attributevalue.dsl._
+  import scynamo.dsl.attributevalue._
   def iterableDecoder[A: ScynamoDecoder, C[_] <: Iterable[A], X](implicit factory: Factory[A, C[A]]): ScynamoDecoder[C[A]] =
     attributeValue =>
       attributeValue.lOpt match {
@@ -159,7 +159,7 @@ trait ScynamoDecoderFunctions {
 }
 
 trait ObjectScynamoDecoder[A] extends ScynamoDecoder[A] {
-  import scynamo.attributevalue.dsl._
+  import scynamo.dsl.attributevalue._
   override def decode(attributeValue: AttributeValue): EitherNec[ScynamoDecodeError, A] = attributeValue.mOpt match {
     case Some(value) => decodeMap(value)
     case None        => Either.leftNec(TypeMismatch(ScynamoMap, attributeValue))

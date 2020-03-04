@@ -1,10 +1,15 @@
-package scynamo.attributevalue.dsl
+package scynamo.dsl.attributevalue
 
 import java.util
+
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
-class AttributeValueOps(val attributeValue: AttributeValue) extends AnyVal {
+trait AttributeValueDsl {
+  implicit def toAttributeValueOps(attributeValue: AttributeValue): AttributeValueDslOps = new AttributeValueDslOps(attributeValue)
+}
+
+class AttributeValueDslOps(val attributeValue: AttributeValue) extends AnyVal {
   def bOpt: Option[SdkBytes]                         = Option(attributeValue.b)
   def nOpt: Option[String]                           = Option(attributeValue.n)
   def sOpt: Option[String]                           = Option(attributeValue.s)
