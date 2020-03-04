@@ -4,6 +4,7 @@ import cats.data.EitherNec
 import cats.instances.either._
 import cats.syntax.apply._
 import cats.syntax.either._
+import scynamo.ScynamoDecodeError._
 import scynamo.ScynamoType.ScynamoString
 import scynamo._
 import scynamo.dsl.attributevalue._

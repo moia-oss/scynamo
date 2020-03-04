@@ -2,6 +2,7 @@ package scynamo
 
 import cats.syntax.either._
 import org.scalatest.Inspectors
+import scynamo.ScynamoDecodeError.GeneralError
 import scynamo.dsl.encoder._
 
 class ScynamoCodecTest extends UnitTest {

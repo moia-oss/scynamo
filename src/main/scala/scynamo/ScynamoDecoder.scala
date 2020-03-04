@@ -10,6 +10,7 @@ import cats.kernel.Eq
 import cats.syntax.either._
 import cats.syntax.parallel._
 import cats.{Functor, SemigroupK}
+import scynamo.ScynamoDecodeError._
 import scynamo.ScynamoType._
 import scynamo.generic.GenericScynamoDecoder
 import scynamo.generic.auto.AutoDerivationUnlocked
@@ -21,14 +22,15 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.jdk.CollectionConverters._
 import scala.util.control.NonFatal
 
-abstract class ScynamoDecodeError                                                            extends Product with Serializable
-case class MissingFieldInMap(fieldName: String, hmap: java.util.Map[String, AttributeValue]) extends ScynamoDecodeError
-case class TypeMismatch(expected: ScynamoType, attributeValue: AttributeValue)               extends ScynamoDecodeError
-case class InvalidCase(hmap: java.util.Map[String, AttributeValue])                          extends ScynamoDecodeError
-case class ParseError(message: String, cause: Option[Throwable])                             extends ScynamoDecodeError
-case class GeneralError(message: String, cause: Option[Throwable])                           extends ScynamoDecodeError
+abstract class ScynamoDecodeError extends Product with Serializable
 
 object ScynamoDecodeError {
+  case class MissingFieldInMap(fieldName: String, hmap: java.util.Map[String, AttributeValue]) extends ScynamoDecodeError
+  case class TypeMismatch(expected: ScynamoType, attributeValue: AttributeValue)               extends ScynamoDecodeError
+  case class InvalidCase(hmap: java.util.Map[String, AttributeValue])                          extends ScynamoDecodeError
+  case class ParseError(message: String, cause: Option[Throwable])                             extends ScynamoDecodeError
+  case class GeneralError(message: String, cause: Option[Throwable])                           extends ScynamoDecodeError
+
   implicit val scynamoDecodeErrorEq: Eq[ScynamoDecodeError] = Eq.fromUniversalEquals[ScynamoDecodeError]
 }
 
