@@ -10,6 +10,13 @@ trait ScynamoCodec[A] extends ScynamoEncoder[A] with ScynamoDecoder[A] { self =>
     override def decode(attributeValue: AttributeValue): EitherNec[ScynamoDecodeError, B] = self.decode(attributeValue).map(f)
     override def encode(value: B): AttributeValue                                         = self.encode(g(value))
   }
+
+  def itransform[B](f: EitherNec[ScynamoDecodeError, A] => EitherNec[ScynamoDecodeError, B])(g: B => A): ScynamoCodec[B] =
+    new ScynamoCodec[B] {
+      override def decode(attributeValue: AttributeValue): EitherNec[ScynamoDecodeError, B] = f(self.decode(attributeValue))
+
+      override def encode(value: B): AttributeValue = self.encode(g(value))
+    }
 }
 
 object ScynamoCodec {

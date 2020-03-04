@@ -1,6 +1,8 @@
 package scynamo
 
+import cats.syntax.either._
 import org.scalatest.Inspectors
+import scynamo.dsl.encoder._
 
 class ScynamoCodecTest extends UnitTest {
   "DynamoCodec" should {
@@ -72,6 +74,28 @@ class ScynamoCodecTest extends UnitTest {
       val result  = ObjectScynamoCodec[Foobar].decode(encoded)
 
       result should ===(Right(input))
+    }
+
+    "support transformation" in {
+      sealed trait Foobar
+      case object Foo extends Foobar
+      case object Bar extends Foobar
+
+      val codec = ScynamoCodec[String].itransform[Foobar] {
+        case Left(value) => Left(value)
+        case Right(value) =>
+          value match {
+            case "Foo" => Right(Foo)
+            case "Bar" => Right(Bar)
+            case s     => Either.leftNec(GeneralError(s"Unknown tag: $s", None))
+          }
+      }(_.toString)
+
+      codec.encode(Bar) should ===("Bar".toAttributeValue)
+
+      codec.decode("Baz".toAttributeValue) should matchPattern {
+        case Left(_) =>
+      }
     }
   }
 }
