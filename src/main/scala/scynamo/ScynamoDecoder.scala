@@ -26,7 +26,6 @@ case class MissingFieldInMap(fieldName: String, hmap: java.util.Map[String, Attr
 case class TypeMismatch(expected: ScynamoType, attributeValue: AttributeValue)               extends ScynamoDecodeError
 case class InvalidCase(hmap: java.util.Map[String, AttributeValue])                          extends ScynamoDecodeError
 case class ParseError(message: String, cause: Option[Throwable])                             extends ScynamoDecodeError
-case class InvalidTypeTag(attributeValue: AttributeValue)                                    extends ScynamoDecodeError
 
 object ScynamoDecodeError {
   implicit val scynamoDecodeErrorEq: Eq[ScynamoDecodeError] = Eq.fromUniversalEquals[ScynamoDecodeError]
