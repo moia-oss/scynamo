@@ -117,10 +117,18 @@ trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with Scynam
   implicit val uuidDecoder: ScynamoDecoder[UUID] = attributeValue =>
     accessOrTypeMismatch(attributeValue, ScynamoString)(_.sOpt).flatMap(s => convert(s)(UUID.fromString))
 
-  implicit def mapDecoder[A](implicit valueDecoder: ScynamoDecoder[A]): ScynamoDecoder[Map[String, A]] =
+  implicit def mapDecoder[A, B](
+      implicit keyDecoder: ScynamoKeyDecoder[A],
+      valueDecoder: ScynamoDecoder[B]
+  ): ScynamoDecoder[Map[A, B]] =
     attributeValue =>
       accessOrTypeMismatch(attributeValue, ScynamoMap)(_.mOpt).flatMap { javaMap =>
-        javaMap.asScala.toVector.parTraverse { case (key, value) => valueDecoder.decode(value).map(key -> _) }.map(_.toMap)
+        javaMap.asScala.toVector
+          .parTraverse {
+            case (key, value) =>
+              (keyDecoder.decode(key), valueDecoder.decode(value)).parMapN(_ -> _)
+          }
+          .map(_.toMap)
       }
 
   implicit val attributeValueDecoder: ScynamoDecoder[AttributeValue] = attributeValue => Right(attributeValue)
@@ -187,4 +195,20 @@ object ObjectScynamoDecoder extends ScynamoDecoderFunctions {
 
   implicit def mapDecoder[A](implicit valueDecoder: ScynamoDecoder[A]): ObjectScynamoDecoder[Map[String, A]] =
     javaMap => javaMap.asScala.toVector.parTraverse { case (key, value) => valueDecoder.decode(value).map(key -> _) }.map(_.toMap)
+}
+
+trait ScynamoKeyDecoder[A] {
+  def decode(value: String): EitherNec[ScynamoDecodeError, A]
+}
+
+object ScynamoKeyDecoder {
+  def apply[A](implicit decoder: ScynamoKeyDecoder[A]): ScynamoKeyDecoder[A] = decoder
+
+  implicit val stringKeyDecoder: ScynamoKeyDecoder[String] = s => Right(s)
+
+  implicit val uuidKeyDecoder: ScynamoKeyDecoder[UUID] = s => {
+    val result = Either.catchOnly[IllegalArgumentException](UUID.fromString(s))
+
+    result.leftMap(e => NonEmptyChain.one(ScynamoDecodeError.ParseError(s"Could not convert to UUID: $s", Some(e))))
+  }
 }

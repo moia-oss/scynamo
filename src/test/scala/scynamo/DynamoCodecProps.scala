@@ -63,7 +63,7 @@ class DynamoCodecProps extends Properties("DynamoCodec") {
 
   propertyWithSeed("decode.encode === id (uuid)", None) = Prop.forAll { value: UUID => decodeAfterEncodeIsIdentity(value) }
 
-  propertyWithSeed("decode.encode === id (hashmap)", None) = Prop.forAll { value: Map[String, Int] => decodeAfterEncodeIsIdentity(value) }
+  propertyWithSeed("decode.encode === id (scala map)", None) = Prop.forAll { value: Map[UUID, Int] => decodeAfterEncodeIsIdentity(value) }
 
   private[this] def decodeAfterEncodeIsIdentity[A](value: A)(implicit codec: ScynamoCodec[A]): Prop = {
     val encoded = codec.encode(value)

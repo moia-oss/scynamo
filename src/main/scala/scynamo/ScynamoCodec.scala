@@ -68,3 +68,15 @@ object ScynamoEnumCodec {
     override def decode(attributeValue: AttributeValue): EitherNec[ScynamoDecodeError, A] = decoder.decode(attributeValue)
   }
 }
+
+trait ScynamoKeyCodec[A] extends ScynamoKeyEncoder[A] with ScynamoKeyDecoder[A]
+
+object ScynamoKeyCodec {
+  def apply[A](implicit codec: ScynamoKeyCodec[A]): ScynamoKeyCodec[A] = codec
+
+  implicit def fromEncoderAndDecoder[A](implicit encoder: ScynamoKeyEncoder[A], decoder: ScynamoKeyDecoder[A]): ScynamoKeyCodec[A] =
+    new ScynamoKeyCodec[A] {
+      override def encode(value: A): String                                         = encoder.encode(value)
+      override def decode(attributeValue: String): EitherNec[ScynamoDecodeError, A] = decoder.decode(attributeValue)
+    }
+}

@@ -3,13 +3,13 @@ package scynamo
 import java.time.Instant
 import java.util.UUID
 
-import scala.jdk.CollectionConverters._
 import scynamo.generic.GenericScynamoEncoder
 import scynamo.generic.auto.AutoDerivationUnlocked
 import shapeless._
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.jdk.CollectionConverters._
 
 trait ScynamoEncoder[A] { self =>
   def encode(value: A): AttributeValue
@@ -63,13 +63,15 @@ trait DefaultScynamoEncoderInstances extends ScynamoIterableEncoder {
 
   implicit val durationEncoder: ScynamoEncoder[Duration] = longEncoder.contramap(_.toNanos)
 
-  implicit def mapEncoder[A](implicit valueEncoder: ScynamoEncoder[A]): ScynamoEncoder[Map[String, A]] =
+  implicit def mapEncoder[A, B](implicit keyEncoder: ScynamoKeyEncoder[A], valueEncoder: ScynamoEncoder[B]): ScynamoEncoder[Map[A, B]] =
     value => {
-      val hm = value.toVector.map { case (k, v) => k -> valueEncoder.encode(v) }.foldLeft(new java.util.HashMap[String, AttributeValue]()) {
-        case (acc, (k, v)) =>
-          acc.put(k, v)
-          acc
-      }
+      val hm = value.toVector
+        .map { case (k, v) => keyEncoder.encode(k) -> valueEncoder.encode(v) }
+        .foldLeft(new java.util.HashMap[String, AttributeValue]()) {
+          case (acc, (k, v)) =>
+            acc.put(k, v)
+            acc
+        }
       AttributeValue.builder().m(hm).build()
     }
 
@@ -107,5 +109,16 @@ object ObjectScynamoEncoder {
           acc.put(k, v)
           acc
       }
+}
 
+trait ScynamoKeyEncoder[A] {
+  def encode(value: A): String
+}
+
+object ScynamoKeyEncoder {
+  def apply[A](implicit encoder: ScynamoKeyEncoder[A]): ScynamoKeyEncoder[A] = encoder
+
+  implicit val stringKeyEncoder: ScynamoKeyEncoder[String] = value => value
+
+  implicit val uuidKeyEncoder: ScynamoKeyEncoder[UUID] = value => value.toString
 }
