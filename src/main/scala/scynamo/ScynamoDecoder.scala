@@ -122,6 +122,8 @@ trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with Scynam
       accessOrTypeMismatch(attributeValue, ScynamoMap)(_.mOpt).flatMap { javaMap =>
         javaMap.asScala.toVector.parTraverse { case (key, value) => valueDecoder.decode(value).map(key -> _) }.map(_.toMap)
       }
+
+  implicit val attributeValueDecoder: ScynamoDecoder[AttributeValue] = attributeValue => Right(attributeValue)
 }
 
 trait ScynamoIterableDecoder extends LowestPrioAutoDecoder {
@@ -179,6 +181,10 @@ trait ObjectScynamoDecoder[A] extends ScynamoDecoder[A] {
   def decodeMap(value: java.util.Map[String, AttributeValue]): EitherNec[ScynamoDecodeError, A]
 }
 
-object ObjectScynamoDecoder {
+object ObjectScynamoDecoder extends ScynamoDecoderFunctions {
+
   def apply[A](implicit instance: ObjectScynamoDecoder[A]): ObjectScynamoDecoder[A] = instance
+
+  implicit def mapDecoder[A](implicit valueDecoder: ScynamoDecoder[A]): ObjectScynamoDecoder[Map[String, A]] =
+    javaMap => javaMap.asScala.toVector.parTraverse { case (key, value) => valueDecoder.decode(value).map(key -> _) }.map(_.toMap)
 }

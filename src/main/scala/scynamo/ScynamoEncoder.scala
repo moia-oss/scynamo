@@ -72,6 +72,8 @@ trait DefaultScynamoEncoderInstances extends ScynamoIterableEncoder {
       }
       AttributeValue.builder().m(hm).build()
     }
+
+  implicit val attributeValueEncoder: ScynamoEncoder[AttributeValue] = value => value
 }
 
 trait ScynamoIterableEncoder extends LowestPrioAutoEncoder {
@@ -97,4 +99,13 @@ trait ObjectScynamoEncoder[A] extends ScynamoEncoder[A] {
 
 object ObjectScynamoEncoder {
   def apply[A](implicit instance: ObjectScynamoEncoder[A]): ObjectScynamoEncoder[A] = instance
+
+  implicit def mapEncoder[A](implicit valueEncoder: ScynamoEncoder[A]): ObjectScynamoEncoder[Map[String, A]] =
+    value =>
+      value.toVector.map { case (k, v) => k -> valueEncoder.encode(v) }.foldLeft(new java.util.HashMap[String, AttributeValue]()) {
+        case (acc, (k, v)) =>
+          acc.put(k, v)
+          acc
+      }
+
 }

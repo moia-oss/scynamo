@@ -1,0 +1,4 @@
+package scynamo 
+class ScynamoTest {
+
+}

@@ -1,0 +1,4 @@
+package scynamo 
+object Scynamo {
+
+}
