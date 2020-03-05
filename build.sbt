@@ -17,7 +17,6 @@ lazy val root = (project in file("."))
       }
     },
     scalafmtOnCompile := true,
-    resolvers += "Artifactory".at("https://moiadev.jfrog.io/moiadev/sbt-release"),
     credentials ++= Seq(Path.userHome / ".ivy2" / ".credentials").filter(_.exists).map(Credentials(_)),
     credentials ++= Seq("ARTIFACTORY_USER")
       .filter(sys.env.isDefinedAt)
