@@ -1,4 +1,4 @@
-package scynamo.dsl.decoder
+package scynamo.syntax.decoder
 
 import cats.data.EitherNec
 import scynamo.{ScynamoDecodeError, ScynamoDecoder}

@@ -11,7 +11,7 @@ class ScynamoTest extends UnitTest {
     }
 
     "return the decoded result if it has an item that is well formed" in {
-      import scynamo.dsl.encoder._
+      import scynamo.syntax.encoder._
       val input = Map("foo" -> "bar")
 
       val response = GetItemResponse.builder().item(input.toAttributeValueMap).build()

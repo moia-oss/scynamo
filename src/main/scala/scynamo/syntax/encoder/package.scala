@@ -1,3 +1,3 @@
-package scynamo.dsl
+package scynamo.syntax
 
 package object encoder extends ScynamoEncoderDsl

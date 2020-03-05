@@ -7,7 +7,7 @@ import cats.syntax.either._
 import scynamo.ScynamoDecodeError._
 import scynamo.ScynamoType.ScynamoString
 import scynamo._
-import scynamo.dsl.attributevalue._
+import scynamo.syntax.attributevalue._
 import shapeless._
 import shapeless.labelled._
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue

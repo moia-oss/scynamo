@@ -1,4 +1,4 @@
-package scynamo.dsl.attributevalue
+package scynamo.syntax.attributevalue
 
 import java.util
 

@@ -41,7 +41,7 @@ object ScynamoEncoderTest {
   case class Foo(i: Int)
 
   object Foo {
-    import scynamo.dsl.attributevalue._
+    import scynamo.syntax.attributevalue._
     val prefix = "this-is-a-"
     implicit val customIntCodec: ScynamoCodec[Int] = new ScynamoCodec[Int] {
       override def encode(value: Int): AttributeValue =
@@ -57,7 +57,7 @@ object ScynamoEncoderTest {
   case class Foo2(i: Int)
 
   object Foo2 {
-    import scynamo.dsl.attributevalue._
+    import scynamo.syntax.attributevalue._
     val prefix = "this-is-a-"
     implicit val customIntCodec: ScynamoCodec[Int] = new ScynamoCodec[Int] {
       override def encode(value: Int): AttributeValue =

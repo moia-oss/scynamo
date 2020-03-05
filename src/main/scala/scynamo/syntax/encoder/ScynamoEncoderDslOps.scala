@@ -1,4 +1,4 @@
-package scynamo.dsl.encoder
+package scynamo.syntax.encoder
 
 import java.util
 

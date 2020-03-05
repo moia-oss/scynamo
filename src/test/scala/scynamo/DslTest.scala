@@ -5,7 +5,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 class DslTest extends UnitTest {
   "DSL" should {
     "allow decoding" in {
-      import scynamo.dsl.decoder._
+      import scynamo.syntax.decoder._
 
       val result = AttributeValue.builder().s("some-string").build().fromAttributeValue[String]
 
@@ -13,7 +13,7 @@ class DslTest extends UnitTest {
     }
 
     "allow encoding" in {
-      import scynamo.dsl.encoder._
+      import scynamo.syntax.encoder._
 
       val result = "some-string".toAttributeValue
 
@@ -21,7 +21,7 @@ class DslTest extends UnitTest {
     }
 
     "allow option access to fields in AttributeValue" in {
-      import scynamo.dsl.attributevalue._
+      import scynamo.syntax.attributevalue._
 
       val input = AttributeValue.builder().build()
 
