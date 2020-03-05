@@ -8,40 +8,43 @@ import shapeless._
 import shapeless.labelled._
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
-trait ShapelessScynamoEncoder[A] {
+trait ShapelessScynamoEncoder[Base, A] {
   def encodeMap(value: A): java.util.Map[String, AttributeValue]
 }
 
 object ShapelessScynamoEncoder extends EncoderHListInstances with EncoderCoproductInstances
 
 trait EncoderHListInstances {
-  implicit def deriveHNil: ShapelessScynamoEncoder[HNil] = _ => Collections.emptyMap()
+  implicit def deriveHNil[Base]: ShapelessScynamoEncoder[Base, HNil] = _ => Collections.emptyMap()
 
-  implicit def deriveHCons[K <: Symbol, V, T <: HList](
+  implicit def deriveHCons[Base, K <: Symbol, V, T <: HList](
       implicit
       key: Witness.Aux[K],
       sv: Lazy[ScynamoEncoder[V]],
-      st: Lazy[ShapelessScynamoEncoder[T]]
-  ): ShapelessScynamoEncoder[FieldType[K, V] :: T] =
+      st: Lazy[ShapelessScynamoEncoder[Base, T]],
+      opts: ScynamoDerivationOpts[Base] = ScynamoDerivationOpts.default[Base]
+  ): ShapelessScynamoEncoder[Base, FieldType[K, V] :: T] =
     value => {
+      val fieldName = opts.transform(key.value.name)
+
       val tail = st.value.encodeMap(value.tail)
 
       val hm = new util.HashMap[String, AttributeValue]()
       hm.putAll(tail)
-      hm.put(key.value.name, sv.value.encode(value.head))
+      hm.put(fieldName, sv.value.encode(value.head))
       hm
     }
 }
 
 trait EncoderCoproductInstances {
-  implicit def deriveCNil: ShapelessScynamoEncoder[CNil] = _ => Collections.emptyMap()
+  implicit def deriveCNil[Base]: ShapelessScynamoEncoder[Base, CNil] = _ => Collections.emptyMap()
 
-  implicit def deriveCCons[K <: Symbol, V, T <: Coproduct](
+  implicit def deriveCCons[Base, K <: Symbol, V, T <: Coproduct](
       implicit
       key: Witness.Aux[K],
       sv: Lazy[ScynamoEncoder[V]],
-      st: Lazy[ShapelessScynamoEncoder[T]]
-  ): ShapelessScynamoEncoder[FieldType[K, V] :+: T] = {
+      st: Lazy[ShapelessScynamoEncoder[Base, T]]
+  ): ShapelessScynamoEncoder[Base, FieldType[K, V] :+: T] = {
     case Inl(l) =>
       val hm = new util.HashMap[String, AttributeValue]()
       hm.putAll(sv.value.encode(l).m())

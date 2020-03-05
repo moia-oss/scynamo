@@ -12,28 +12,30 @@ import shapeless._
 import shapeless.labelled._
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
-trait ShapelessScynamoDecoder[A] {
+trait ShapelessScynamoDecoder[Base, A] {
   def decodeMap(value: java.util.Map[String, AttributeValue]): EitherNec[ScynamoDecodeError, A]
 }
 
 object ShapelessScynamoDecoder extends DecoderHListInstances with DecoderCoproductInstances
 
 trait DecoderHListInstances extends ScynamoDecoderFunctions {
-  implicit def deriveHNil: ShapelessScynamoDecoder[HNil] = _ => Right(HNil)
+  implicit def deriveHNil[Base]: ShapelessScynamoDecoder[Base, HNil] = _ => Right(HNil)
 
-  implicit def deriveHCons[K <: Symbol, V, T <: HList](
+  implicit def deriveHCons[Base, K <: Symbol, V, T <: HList](
       implicit
       key: Witness.Aux[K],
       sv: Lazy[ScynamoDecoder[V]],
-      st: Lazy[ShapelessScynamoDecoder[T]]
-  ): ShapelessScynamoDecoder[FieldType[K, V] :: T] =
+      st: Lazy[ShapelessScynamoDecoder[Base, T]],
+      opts: ScynamoDerivationOpts[Base] = ScynamoDerivationOpts.default[Base]
+  ): ShapelessScynamoDecoder[Base, FieldType[K, V] :: T] =
     value => {
-      val fieldAttrValue = Option(value.get(key.value.name))
+      val fieldName      = opts.transform(key.value.name)
+      val fieldAttrValue = Option(value.get(fieldName))
 
       val decodedHead = (fieldAttrValue, sv.value.defaultValue) match {
         case (Some(field), _)      => sv.value.decode(field)
         case (None, Some(default)) => Right(default)
-        case (None, None)          => Either.leftNec(MissingFieldInMap(key.value.name, value))
+        case (None, None)          => Either.leftNec(MissingFieldInMap(fieldName, value))
       }
 
       (decodedHead.map(field[K](_)), st.value.decodeMap(value)).mapN(_ :: _)
@@ -41,22 +43,22 @@ trait DecoderHListInstances extends ScynamoDecoderFunctions {
 }
 
 trait DecoderCoproductInstances extends ScynamoDecoderFunctions {
-  implicit def deriveCNil: ShapelessScynamoDecoder[CNil] = value => Either.leftNec(InvalidCase(value))
+  implicit def deriveCNil[Base]: ShapelessScynamoDecoder[Base, CNil] = value => Either.leftNec(InvalidCase(value))
 
-  implicit def deriveCCons[K <: Symbol, V, T <: Coproduct](
+  implicit def deriveCCons[Base, K <: Symbol, V, T <: Coproduct](
       implicit
       key: Witness.Aux[K],
       sv: Lazy[ScynamoDecoder[V]],
-      st: Lazy[ShapelessScynamoDecoder[T]]
-  ): ShapelessScynamoDecoder[FieldType[K, V] :+: T] =
+      st: Lazy[ShapelessScynamoDecoder[Base, T]]
+  ): ShapelessScynamoDecoder[Base, FieldType[K, V] :+: T] =
     value => deriveCConsTagged.decodeMap(value).orElse(deriveCConsNested.decodeMap(value))
 
-  def deriveCConsTagged[K <: Symbol, V, T <: Coproduct](
+  def deriveCConsTagged[Base, K <: Symbol, V, T <: Coproduct](
       implicit
       key: Witness.Aux[K],
       sv: Lazy[ScynamoDecoder[V]],
-      st: Lazy[ShapelessScynamoDecoder[T]]
-  ): ShapelessScynamoDecoder[FieldType[K, V] :+: T] =
+      st: Lazy[ShapelessScynamoDecoder[Base, T]]
+  ): ShapelessScynamoDecoder[Base, FieldType[K, V] :+: T] =
     value =>
       for {
         typeTagAttrValue <- Option(value.get(ScynamoType.MAGIC_TYPE_ATTRIBUTE_NAME))
@@ -70,12 +72,12 @@ trait DecoderCoproductInstances extends ScynamoDecoderFunctions {
         }
       } yield result
 
-  def deriveCConsNested[K <: Symbol, V, T <: Coproduct](
+  def deriveCConsNested[Base, K <: Symbol, V, T <: Coproduct](
       implicit
       key: Witness.Aux[K],
       sv: Lazy[ScynamoDecoder[V]],
-      st: Lazy[ShapelessScynamoDecoder[T]]
-  ): ShapelessScynamoDecoder[FieldType[K, V] :+: T] =
+      st: Lazy[ShapelessScynamoDecoder[Base, T]]
+  ): ShapelessScynamoDecoder[Base, FieldType[K, V] :+: T] =
     value => {
       Option(value.get(key.value.name)) match {
         case Some(nestedValue) => sv.value.decode(nestedValue).map(v => Inl(field[K](v)))

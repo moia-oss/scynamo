@@ -6,7 +6,7 @@ import scynamo.ScynamoDecodeError.GeneralError
 import scynamo.syntax.encoder._
 
 class ScynamoCodecTest extends UnitTest {
-  "DynamoCodec" should {
+  "ScynamoCodec" should {
     import scynamo.generic.auto._
 
     "encode then decode a case class" in {

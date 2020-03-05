@@ -5,12 +5,12 @@ import java.util.UUID
 
 import org.scalacheck.Prop.propBoolean
 import org.scalacheck.{Gen, Prop, Properties}
-import scynamo.DynamoCodecProps.Shape
+import scynamo.ScynamoCodecProps.Shape
 import scynamo.generic.semiauto._
 
 import scala.concurrent.duration.Duration
 
-class DynamoCodecProps extends Properties("DynamoCodec") {
+class ScynamoCodecProps extends Properties("ScynamoCodec") {
   propertyWithSeed("decode.encode === id (int)", None) = Prop.forAll { value: Int => decodeAfterEncodeIsIdentity(value) }
 
   propertyWithSeed("decode.encode === id (long)", None) = Prop.forAll { value: Long => decodeAfterEncodeIsIdentity(value) }
@@ -54,7 +54,7 @@ class DynamoCodecProps extends Properties("DynamoCodec") {
     }
 
   propertyWithSeed("decode.encode === id (case class)", None) = Prop.forAll { value: Int =>
-    decodeAfterEncodeIsIdentity(DynamoCodecProps.Foo(value))
+    decodeAfterEncodeIsIdentity(ScynamoCodecProps.Foo(value))
   }
 
   propertyWithSeed("decode.encode === id (sealed trait)", None) = Prop.forAll(Shape.shapeGen) { value: Shape =>
@@ -72,7 +72,7 @@ class DynamoCodecProps extends Properties("DynamoCodec") {
   }
 }
 
-object DynamoCodecProps {
+object ScynamoCodecProps {
   case class Foo(intAttribute: Int)
   object Foo {
     implicit val instance: ObjectScynamoCodec[Foo] = deriveScynamoCodec[Foo]
