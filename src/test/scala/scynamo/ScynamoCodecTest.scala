@@ -1,9 +1,9 @@
 package scynamo
 
-import cats.syntax.either._
 import org.scalatest.Inspectors
 import scynamo.ScynamoDecodeError.GeneralError
 import scynamo.syntax.encoder._
+import cats.data.NonEmptyChain
 
 class ScynamoCodecTest extends UnitTest {
   "ScynamoCodec" should {
@@ -82,20 +82,21 @@ class ScynamoCodecTest extends UnitTest {
       case object Foo extends Foobar
       case object Bar extends Foobar
 
+      val error = NonEmptyChain.one(GeneralError(s"Unknown tag", None))
       val codec = ScynamoCodec[String].itransform[Foobar] {
         case Left(value) => Left(value)
         case Right(value) =>
           value match {
             case "Foo" => Right(Foo)
             case "Bar" => Right(Bar)
-            case s     => Either.leftNec(GeneralError(s"Unknown tag: $s", None))
+            case _     => Left(error)
           }
       }(_.toString)
 
       codec.encode(Bar) should ===("Bar".toAttributeValue)
 
       codec.decode("Baz".toAttributeValue) should matchPattern {
-        case Left(_) =>
+        case Left(`error`) =>
       }
     }
   }
