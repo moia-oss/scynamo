@@ -3,7 +3,7 @@ package scynamo
 import java.util
 
 import cats.data.EitherNec
-import scynamo.generic.{GenericScynamoEnumDecoder, GenericScynamoEnumEncoder}
+import scynamo.generic.{GenericScynamoEnumDecoder, GenericScynamoEnumEncoder, SemiautoDerivationCodec}
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
 trait ScynamoCodec[A] extends ScynamoEncoder[A] with ScynamoDecoder[A] { self =>
@@ -41,7 +41,7 @@ trait ObjectScynamoCodec[A] extends ObjectScynamoEncoder[A] with ObjectScynamoDe
   }
 }
 
-object ObjectScynamoCodec {
+object ObjectScynamoCodec extends SemiautoDerivationCodec {
   def apply[A](implicit codec: ObjectScynamoCodec[A]): ObjectScynamoCodec[A] = codec
 
   implicit def fromEncoderAndDecoder[A](
@@ -56,7 +56,7 @@ object ObjectScynamoCodec {
 
 trait ScynamoEnumCodec[A] extends ScynamoCodec[A]
 
-object ScynamoEnumCodec {
+object ScynamoEnumCodec extends SemiautoDerivationCodec {
   def apply[A](implicit codec: ScynamoEnumCodec[A]): ScynamoEnumCodec[A] = codec
 
   implicit def fromEncoderAndDecoder[A](

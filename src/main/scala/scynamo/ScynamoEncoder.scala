@@ -3,7 +3,7 @@ package scynamo
 import java.time.Instant
 import java.util.UUID
 
-import scynamo.generic.GenericScynamoEncoder
+import scynamo.generic.{GenericScynamoEncoder, SemiautoDerivationEncoder}
 import scynamo.generic.auto.AutoDerivationUnlocked
 import shapeless._
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
@@ -99,7 +99,7 @@ trait ObjectScynamoEncoder[A] extends ScynamoEncoder[A] {
   override def encode(value: A): AttributeValue = AttributeValue.builder().m(encodeMap(value)).build()
 }
 
-object ObjectScynamoEncoder {
+object ObjectScynamoEncoder extends SemiautoDerivationEncoder {
   def apply[A](implicit instance: ObjectScynamoEncoder[A]): ObjectScynamoEncoder[A] = instance
 
   implicit def mapEncoder[A](implicit valueEncoder: ScynamoEncoder[A]): ObjectScynamoEncoder[Map[String, A]] =

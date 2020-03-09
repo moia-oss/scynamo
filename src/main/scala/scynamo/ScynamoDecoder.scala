@@ -12,7 +12,7 @@ import cats.syntax.parallel._
 import cats.{Functor, SemigroupK}
 import scynamo.ScynamoDecodeError._
 import scynamo.ScynamoType._
-import scynamo.generic.GenericScynamoDecoder
+import scynamo.generic.{GenericScynamoDecoder, SemiautoDerivationDecoder}
 import scynamo.generic.auto.AutoDerivationUnlocked
 import shapeless.Lazy
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
@@ -189,7 +189,7 @@ trait ObjectScynamoDecoder[A] extends ScynamoDecoder[A] {
   def decodeMap(value: java.util.Map[String, AttributeValue]): EitherNec[ScynamoDecodeError, A]
 }
 
-object ObjectScynamoDecoder extends ScynamoDecoderFunctions {
+object ObjectScynamoDecoder extends ScynamoDecoderFunctions with SemiautoDerivationDecoder {
 
   def apply[A](implicit instance: ObjectScynamoDecoder[A]): ObjectScynamoDecoder[A] = instance
 

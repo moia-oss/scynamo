@@ -29,6 +29,19 @@ class SemiautoDerivationTest extends UnitTest {
           case Right(value) => value.keySet should contain("thisnamehasuppercaseletters")
         }
       }
+
+      "companion methods work" in {
+        case class Foo(s: String)
+        object Foo {
+          implicit val codec: ObjectScynamoCodec[Foo] = ObjectScynamoCodec.deriveScynamoCodec[Foo]
+        }
+
+        val input = Foo("test")
+
+        val result = input.toAttributeValue.fromAttributeValue[Foo]
+
+        result should ===(Right(input))
+      }
     }
 
     "deriving for an enum" should {
