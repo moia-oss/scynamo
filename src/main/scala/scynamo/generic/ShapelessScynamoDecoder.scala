@@ -57,29 +57,33 @@ trait DecoderCoproductInstances extends ScynamoDecoderFunctions {
       implicit
       key: Witness.Aux[K],
       sv: Lazy[ScynamoDecoder[V]],
-      st: Lazy[ShapelessScynamoDecoder[Base, T]]
+      st: Lazy[ShapelessScynamoDecoder[Base, T]],
+      opts: ScynamoSealedTraitOpts[Base] = ScynamoSealedTraitOpts.default[Base]
   ): ShapelessScynamoDecoder[Base, FieldType[K, V] :+: T] =
-    value =>
+    value => {
+      val name = opts.transform(key.value.name)
       for {
-        typeTagAttrValue <- Option(value.get(ScynamoType.MAGIC_TYPE_ATTRIBUTE_NAME))
+        typeTagAttrValue <- Option(value.get(opts.discriminator))
           .map(Right(_))
-          .getOrElse(Either.leftNec(MissingFieldInMap(key.value.name, value)))
+          .getOrElse(Either.leftNec(MissingFieldInMap(name, value)))
         typeTag <- accessOrTypeMismatch(typeTagAttrValue, ScynamoString)(_.sOpt)
-        result <- if (key.value.name == typeTag) {
+        result <- if (name == typeTag) {
           sv.value.decode(AttributeValue.builder().m(value).build()).map(v => Inl(field[K](v)))
         } else {
           st.value.decodeMap(value).map(Inr(_))
         }
       } yield result
+    }
 
   def deriveCConsNested[Base, K <: Symbol, V, T <: Coproduct](
       implicit
       key: Witness.Aux[K],
       sv: Lazy[ScynamoDecoder[V]],
-      st: Lazy[ShapelessScynamoDecoder[Base, T]]
+      st: Lazy[ShapelessScynamoDecoder[Base, T]],
+      opts: ScynamoSealedTraitOpts[Base] = ScynamoSealedTraitOpts.default[Base]
   ): ShapelessScynamoDecoder[Base, FieldType[K, V] :+: T] =
     value => {
-      Option(value.get(key.value.name)) match {
+      Option(value.get(opts.transform(key.value.name))) match {
         case Some(nestedValue) => sv.value.decode(nestedValue).map(v => Inl(field[K](v)))
         case _                 => st.value.decodeMap(value).map(Inr(_))
       }

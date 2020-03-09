@@ -3,7 +3,7 @@ package scynamo.generic
 import java.util
 import java.util.Collections
 
-import scynamo.{ScynamoEncoder, ScynamoType}
+import scynamo.ScynamoEncoder
 import shapeless._
 import shapeless.labelled._
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
@@ -43,12 +43,13 @@ trait EncoderCoproductInstances {
       implicit
       key: Witness.Aux[K],
       sv: Lazy[ScynamoEncoder[V]],
-      st: Lazy[ShapelessScynamoEncoder[Base, T]]
+      st: Lazy[ShapelessScynamoEncoder[Base, T]],
+      opts: ScynamoSealedTraitOpts[Base] = ScynamoSealedTraitOpts.default[Base]
   ): ShapelessScynamoEncoder[Base, FieldType[K, V] :+: T] = {
     case Inl(l) =>
       val hm = new util.HashMap[String, AttributeValue]()
       hm.putAll(sv.value.encode(l).m())
-      hm.put(ScynamoType.MAGIC_TYPE_ATTRIBUTE_NAME, AttributeValue.builder().s(key.value.name).build())
+      hm.put(opts.discriminator, AttributeValue.builder().s(opts.transform(key.value.name)).build())
       hm
     case Inr(r) => st.value.encodeMap(r)
   }
