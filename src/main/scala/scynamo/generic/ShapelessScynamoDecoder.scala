@@ -49,7 +49,8 @@ trait DecoderCoproductInstances extends ScynamoDecoderFunctions {
       implicit
       key: Witness.Aux[K],
       sv: Lazy[ScynamoDecoder[V]],
-      st: Lazy[ShapelessScynamoDecoder[Base, T]]
+      st: Lazy[ShapelessScynamoDecoder[Base, T]],
+      opts: ScynamoSealedTraitOpts[Base] = ScynamoSealedTraitOpts.default[Base]
   ): ShapelessScynamoDecoder[Base, FieldType[K, V] :+: T] =
     value => deriveCConsTagged.decodeMap(value).orElse(deriveCConsNested.decodeMap(value))
 
@@ -58,7 +59,7 @@ trait DecoderCoproductInstances extends ScynamoDecoderFunctions {
       key: Witness.Aux[K],
       sv: Lazy[ScynamoDecoder[V]],
       st: Lazy[ShapelessScynamoDecoder[Base, T]],
-      opts: ScynamoSealedTraitOpts[Base] = ScynamoSealedTraitOpts.default[Base]
+      opts: ScynamoSealedTraitOpts[Base]
   ): ShapelessScynamoDecoder[Base, FieldType[K, V] :+: T] =
     value => {
       val name = opts.transform(key.value.name)
@@ -80,7 +81,7 @@ trait DecoderCoproductInstances extends ScynamoDecoderFunctions {
       key: Witness.Aux[K],
       sv: Lazy[ScynamoDecoder[V]],
       st: Lazy[ShapelessScynamoDecoder[Base, T]],
-      opts: ScynamoSealedTraitOpts[Base] = ScynamoSealedTraitOpts.default[Base]
+      opts: ScynamoSealedTraitOpts[Base]
   ): ShapelessScynamoDecoder[Base, FieldType[K, V] :+: T] =
     value => {
       Option(value.get(opts.transform(key.value.name))) match {

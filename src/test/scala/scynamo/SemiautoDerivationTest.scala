@@ -1,7 +1,7 @@
 package scynamo
 
-import org.scalatest.Inside
-import scynamo.generic.ScynamoDerivationOpts
+import org.scalatest.{Inside, Inspectors}
+import scynamo.generic.{ScynamoDerivationOpts, ScynamoSealedTraitOpts}
 import scynamo.generic.semiauto._
 import scynamo.syntax.all._
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
@@ -27,6 +27,33 @@ class SemiautoDerivationTest extends UnitTest {
 
         Inside.inside(encoded.fromAttributeValue[Map[String, AttributeValue]]) {
           case Right(value) => value.keySet should contain("thisnamehasuppercaseletters")
+        }
+      }
+
+      "uses the specified discriminator" in {
+        sealed trait Foobar
+        case object Foo extends Foobar
+        case object Bar extends Foobar
+
+        object Foobar {
+          implicit val sealedTraitOpts: ScynamoSealedTraitOpts[Foobar] = ScynamoSealedTraitOpts("my-custom-discriminator", _.toUpperCase)
+
+          implicit val fooCodec: ObjectScynamoCodec[Foo.type]  = ObjectScynamoCodec.deriveScynamoCodec[Foo.type]
+          implicit val barCodec: ObjectScynamoCodec[Bar.type]  = ObjectScynamoCodec.deriveScynamoCodec[Bar.type]
+          implicit val foobarCodec: ObjectScynamoCodec[Foobar] = ObjectScynamoCodec.deriveScynamoCodec[Foobar]
+        }
+
+        Inspectors.forAll(List[Foobar](Foo, Bar)) { input =>
+          val encoded = input.toAttributeValueMap
+          val decoded = encoded.fromAttributeValueMap[Foobar]
+
+          decoded should ===(Right(input))
+          Inside.inside(encoded.fromAttributeValueMap[Map[String, AttributeValue]]) {
+            case Right(encodedMap) =>
+              Inside.inside(encodedMap.get(Foobar.sealedTraitOpts.discriminator).map(_.fromAttributeValue[String])) {
+                case Some(Right(tag)) => tag should be("FOO").or(be("BAR"))
+              }
+          }
         }
       }
 
