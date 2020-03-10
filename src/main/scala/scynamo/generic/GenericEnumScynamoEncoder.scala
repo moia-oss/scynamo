@@ -23,7 +23,7 @@ trait ShapelessScynamoEnumEncoder[A] {
 object ShapelessScynamoEnumEncoder extends EnumEncoderCoproductInstances
 
 trait EnumEncoderCoproductInstances {
-  implicit val deriveCNil: ShapelessScynamoEnumEncoder[CNil] = _ => throw new NotImplementedError(s"Encoding CNil is not possible")
+  implicit val deriveCNil: ShapelessScynamoEnumEncoder[CNil] = _ => throw new NotImplementedError(s"Encoding CNil as Enum is not possible!")
 
   implicit def deriveCCons[K <: Symbol, V, T <: Coproduct](
       implicit
