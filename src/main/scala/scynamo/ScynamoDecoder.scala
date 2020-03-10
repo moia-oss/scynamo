@@ -9,7 +9,7 @@ import cats.instances.vector._
 import cats.kernel.Eq
 import cats.syntax.either._
 import cats.syntax.parallel._
-import cats.{Functor, SemigroupK}
+import cats.{Functor, SemigroupK, Show}
 import scynamo.ScynamoDecodeError._
 import scynamo.ScynamoType._
 import scynamo.generic.{GenericScynamoDecoder, SemiautoDerivationDecoder}
@@ -22,16 +22,24 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.jdk.CollectionConverters._
 import scala.util.control.NonFatal
 
-abstract class ScynamoDecodeError extends Product with Serializable
+sealed abstract class ScynamoDecodeError extends Product with Serializable
 
 object ScynamoDecodeError {
-  case class MissingFieldInMap(fieldName: String, hmap: java.util.Map[String, AttributeValue]) extends ScynamoDecodeError
-  case class TypeMismatch(expected: ScynamoType, attributeValue: AttributeValue)               extends ScynamoDecodeError
-  case class InvalidCase(hmap: java.util.Map[String, AttributeValue])                          extends ScynamoDecodeError
-  case class ParseError(message: String, cause: Option[Throwable])                             extends ScynamoDecodeError
-  case class GeneralError(message: String, cause: Option[Throwable])                           extends ScynamoDecodeError
+  case class MissingField(fieldName: String, hmap: java.util.Map[String, AttributeValue]) extends ScynamoDecodeError
+  case class TypeMismatch(expected: ScynamoType, attributeValue: AttributeValue)          extends ScynamoDecodeError
+  case class InvalidCoproductCase(hmap: java.util.Map[String, AttributeValue])            extends ScynamoDecodeError
+  case class ConversionError(message: String, cause: Option[Throwable])                   extends ScynamoDecodeError
+  case class GeneralError(message: String, cause: Option[Throwable])                      extends ScynamoDecodeError
 
   implicit val scynamoDecodeErrorEq: Eq[ScynamoDecodeError] = Eq.fromUniversalEquals[ScynamoDecodeError]
+
+  implicit val scynamoDecodeErrorShow: Show[ScynamoDecodeError] = {
+    case MissingField(fieldName, hmap)          => s"Could not find field '$fieldName' inside $hmap'"
+    case TypeMismatch(expected, attributeValue) => s"Type mismatch, expected type $expected, given: $attributeValue"
+    case InvalidCoproductCase(hmap)             => s"Could not decode into one of the sealed traits cases: $hmap"
+    case ConversionError(message, cause)        => s"Error during conversion: $message${cause.fold("")(e => s" with cause: ${e.getMessage}")}"
+    case GeneralError(message, cause)           => s"General decoder error: $message${cause.fold("")(e => s" with cause: ${e.getMessage}")}"
+  }
 }
 
 trait ScynamoDecoder[A] extends ScynamoDecoderFunctions { self =>
@@ -129,7 +137,7 @@ trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with Scynam
               (keyDecoder.decode(key), valueDecoder.decode(value)).parMapN(_ -> _)
           }
           .map(_.toMap)
-      }
+    }
 
   implicit val attributeValueDecoder: ScynamoDecoder[AttributeValue] = attributeValue => Right(attributeValue)
 }
@@ -150,7 +158,7 @@ trait ScynamoIterableDecoder extends LowestPrioAutoDecoder {
 
           elems.map(_.result())
         case None => Either.leftNec(TypeMismatch(ScynamoList, attributeValue))
-      }
+    }
 }
 
 trait LowestPrioAutoDecoder {
@@ -175,7 +183,7 @@ trait ScynamoDecoderFunctions {
     try {
       Right(convertor(s))
     } catch {
-      case NonFatal(e) => Either.leftNec(ParseError(s"Could not convert: ${e.getMessage}", Some(e)))
+      case NonFatal(e) => Either.leftNec(ConversionError(s"Could not convert: ${e.getMessage}", Some(e)))
     }
 }
 
@@ -209,6 +217,6 @@ object ScynamoKeyDecoder {
   implicit val uuidKeyDecoder: ScynamoKeyDecoder[UUID] = s => {
     val result = Either.catchOnly[IllegalArgumentException](UUID.fromString(s))
 
-    result.leftMap(e => NonEmptyChain.one(ScynamoDecodeError.ParseError(s"Could not convert to UUID: $s", Some(e))))
+    result.leftMap(e => NonEmptyChain.one(ScynamoDecodeError.ConversionError(s"Could not convert to UUID: $s", Some(e))))
   }
 }

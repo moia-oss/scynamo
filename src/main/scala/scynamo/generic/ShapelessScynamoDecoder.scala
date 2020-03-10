@@ -35,7 +35,7 @@ trait DecoderHListInstances extends ScynamoDecoderFunctions {
       val decodedHead = (fieldAttrValue, sv.value.defaultValue) match {
         case (Some(field), _)      => sv.value.decode(field)
         case (None, Some(default)) => Right(default)
-        case (None, None)          => Either.leftNec(MissingFieldInMap(fieldName, value))
+        case (None, None)          => Either.leftNec(MissingField(fieldName, value))
       }
 
       (decodedHead.map(field[K](_)), st.value.decodeMap(value)).mapN(_ :: _)
@@ -43,7 +43,7 @@ trait DecoderHListInstances extends ScynamoDecoderFunctions {
 }
 
 trait DecoderCoproductInstances extends ScynamoDecoderFunctions {
-  implicit def deriveCNil[Base]: ShapelessScynamoDecoder[Base, CNil] = value => Either.leftNec(InvalidCase(value))
+  implicit def deriveCNil[Base]: ShapelessScynamoDecoder[Base, CNil] = value => Either.leftNec(InvalidCoproductCase(value))
 
   implicit def deriveCCons[Base, K <: Symbol, V, T <: Coproduct](
       implicit
@@ -66,7 +66,7 @@ trait DecoderCoproductInstances extends ScynamoDecoderFunctions {
       for {
         typeTagAttrValue <- Option(value.get(opts.discriminator))
           .map(Right(_))
-          .getOrElse(Either.leftNec(MissingFieldInMap(name, value)))
+          .getOrElse(Either.leftNec(MissingField(name, value)))
         typeTag <- accessOrTypeMismatch(typeTagAttrValue, ScynamoString)(_.sOpt)
         result <- if (name == typeTag) {
           sv.value.decode(AttributeValue.builder().m(value).build()).map(v => Inl(field[K](v)))
