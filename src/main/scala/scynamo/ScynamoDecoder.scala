@@ -2,6 +2,7 @@ package scynamo
 
 import java.time.Instant
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 import cats.data.{EitherNec, NonEmptyChain}
 import cats.instances.either._
@@ -115,10 +116,7 @@ trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with Scynam
 
   implicit val finiteDurationDecoder: ScynamoDecoder[FiniteDuration] = longDecoder.map(Duration.fromNanos)
 
-  implicit val durationDecoder: ScynamoDecoder[Duration] = {
-    import scala.concurrent.duration._
-    longDecoder.map(_.nanos)
-  }
+  implicit val durationDecoder: ScynamoDecoder[Duration] = longDecoder.map(n => Duration(n, TimeUnit.NANOSECONDS))
 
   implicit val uuidDecoder: ScynamoDecoder[UUID] = attributeValue =>
     attributeValue.asEither(ScynamoType.String).flatMap(s => convert(s)(UUID.fromString))
@@ -135,7 +133,7 @@ trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with Scynam
               (keyDecoder.decode(key), valueDecoder.decode(value)).parMapN(_ -> _)
           }
           .map(_.toMap)
-      }
+    }
 
   implicit val attributeValueDecoder: ScynamoDecoder[AttributeValue] = attributeValue => Right(attributeValue)
 }
@@ -156,7 +154,7 @@ trait ScynamoIterableDecoder extends LowestPrioAutoDecoder {
 
           elems.map(_.result())
         case None => Either.leftNec(TypeMismatch(ScynamoType.List, attributeValue))
-      }
+    }
 }
 
 trait LowestPrioAutoDecoder {
