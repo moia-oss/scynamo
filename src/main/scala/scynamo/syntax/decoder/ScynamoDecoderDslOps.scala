@@ -5,11 +5,11 @@ import scynamo.{ObjectScynamoDecoder, ScynamoDecodeError, ScynamoDecoder}
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
 class ScynamoDecoderDslOps(val attributeValue: AttributeValue) extends AnyVal {
-  def fromAttributeValue[A: ScynamoDecoder]: EitherNec[ScynamoDecodeError, A] = ScynamoDecoder[A].decode(attributeValue)
+  def decode[A: ScynamoDecoder]: EitherNec[ScynamoDecodeError, A] = ScynamoDecoder[A].decode(attributeValue)
 }
 
 class ObjectScynamoDecoderDslOps(val attributeValueMap: java.util.Map[String, AttributeValue]) extends AnyVal {
-  def fromAttributeValueMap[A: ObjectScynamoDecoder]: EitherNec[ScynamoDecodeError, A] =
+  def decode[A: ObjectScynamoDecoder]: EitherNec[ScynamoDecodeError, A] =
     ObjectScynamoDecoder[A].decodeMap(attributeValueMap)
 }
 

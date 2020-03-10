@@ -7,7 +7,7 @@ class DslTest extends UnitTest {
     "allow decoding" in {
       import scynamo.syntax.decoder._
 
-      val result = AttributeValue.builder().s("some-string").build().fromAttributeValue[String]
+      val result = AttributeValue.builder().s("some-string").build().decode[String]
 
       result should ===(Right("some-string"))
     }
@@ -15,7 +15,7 @@ class DslTest extends UnitTest {
     "allow encoding" in {
       import scynamo.syntax.encoder._
 
-      val result = "some-string".toAttributeValue
+      val result = "some-string".encode
 
       result.s should ===("some-string")
     }

@@ -25,7 +25,7 @@ class SemiautoDerivationTest extends UnitTest {
 
         decoded should ===(Right(input))
 
-        Inside.inside(encoded.fromAttributeValue[Map[String, AttributeValue]]) {
+        Inside.inside(encoded.decode[Map[String, AttributeValue]]) {
           case Right(value) => value.keySet should contain("thisnamehasuppercaseletters")
         }
       }
@@ -44,13 +44,13 @@ class SemiautoDerivationTest extends UnitTest {
         }
 
         Inspectors.forAll(List[Foobar](Foo, Bar)) { input =>
-          val encoded = input.toAttributeValueMap
-          val decoded = encoded.fromAttributeValueMap[Foobar]
+          val encoded = input.encodeMap
+          val decoded = encoded.decode[Foobar]
 
           decoded should ===(Right(input))
-          Inside.inside(encoded.fromAttributeValueMap[Map[String, AttributeValue]]) {
+          Inside.inside(encoded.decode[Map[String, AttributeValue]]) {
             case Right(encodedMap) =>
-              Inside.inside(encodedMap.get(Foobar.sealedTraitOpts.discriminator).map(_.fromAttributeValue[String])) {
+              Inside.inside(encodedMap.get(Foobar.sealedTraitOpts.discriminator).map(_.decode[String])) {
                 case Some(Right(tag)) => tag should be("FOO").or(be("BAR"))
               }
           }
@@ -65,7 +65,7 @@ class SemiautoDerivationTest extends UnitTest {
 
         val input = Foo("test")
 
-        val result = input.toAttributeValue.fromAttributeValue[Foo]
+        val result = input.encode.decode[Foo]
 
         result should ===(Right(input))
       }
@@ -75,11 +75,11 @@ class SemiautoDerivationTest extends UnitTest {
       "encode values as a single string" in {
         val input: Shape = Shape.Rectangle
 
-        ScynamoEncoder[Shape].encode(input) should ===("Rectangle".toAttributeValue)
+        ScynamoEncoder[Shape].encode(input) should ===("Rectangle".encode)
       }
 
       "decode values from a single string" in {
-        val input: AttributeValue = "Square".toAttributeValue
+        val input: AttributeValue = "Square".encode
 
         ScynamoDecoder[Shape].decode(input) should ===(Right(Shape.Square))
       }

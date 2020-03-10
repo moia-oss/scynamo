@@ -14,7 +14,7 @@ class ScynamoTest extends UnitTest {
       import scynamo.syntax.encoder._
       val input = Map("foo" -> "bar")
 
-      val response = GetItemResponse.builder().item(input.toAttributeValueMap).build()
+      val response = GetItemResponse.builder().item(input.encodeMap).build()
 
       val result = Scynamo.decodeGetItemResponse[Map[String, String]](response)
 
