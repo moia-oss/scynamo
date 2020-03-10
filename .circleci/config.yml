@@ -2,7 +2,7 @@ version: 2
 
 references:
   dependencies_key: &dependencies_key
-    sbt-v2-deps-{{ checksum "project/build.properties" }}-{{ checksum "project/plugins.sbt" }}-{{ checksum "build.sbt" }}
+    sbt-v1-deps-{{ checksum "project/build.properties" }}-{{ checksum "project/plugins.sbt" }}-{{ checksum "build.sbt" }}
 
   restore_dependencies: &restore_dependencies
     restore_cache:
@@ -11,8 +11,6 @@ references:
 
   sbt_image: &sbt_image
     moia/scala-on-circleci:8u222-2.12.10-sbt-1.3.3
-
-  sbtCommand: &sbtCommand
 
 jobs:
   test:
@@ -24,7 +22,7 @@ jobs:
       - run:
          name: Compile and Test
          command: |
-           sbt -J-Xms512m -J-Xmx2g -no-colors -batch "; +test; +doc; version"
+           sbt -batch "; +test; +doc; version"
       - save_cache:
           key: *dependencies_key
           paths:
@@ -42,7 +40,7 @@ jobs:
       - run:
           name: Publish
           command: |
-            sbt -J-Xms512m -J-Xmx2g -no-colors -batch "; version; +publish"
+            sbt -batch "; version; +publish"
       - save_cache:
           key: *dependencies_key
           paths:
