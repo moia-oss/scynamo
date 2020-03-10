@@ -43,7 +43,7 @@ trait DecoderHListInstances extends ScynamoDecoderFunctions {
 trait DecoderCoproductInstances extends ScynamoDecoderFunctions {
   import scynamo.syntax.attributevalue._
 
-  implicit def deriveCNil[Base]: ShapelessScynamoDecoder[Base, CNil] = value => Either.leftNec(InvalidCoproductCase(value))
+  implicit def deriveCNil[Base]: ShapelessScynamoDecoder[Base, CNil] = value => Either.leftNec(InvalidCoproductCaseMap(value))
 
   implicit def deriveCCons[Base, K <: Symbol, V, T <: Coproduct](
       implicit

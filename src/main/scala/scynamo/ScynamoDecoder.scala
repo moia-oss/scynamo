@@ -27,7 +27,8 @@ sealed abstract class ScynamoDecodeError extends Product with Serializable
 object ScynamoDecodeError {
   case class MissingField(fieldName: String, hmap: java.util.Map[String, AttributeValue]) extends ScynamoDecodeError
   case class TypeMismatch(expected: ScynamoType, attributeValue: AttributeValue)          extends ScynamoDecodeError
-  case class InvalidCoproductCase(hmap: java.util.Map[String, AttributeValue])            extends ScynamoDecodeError
+  case class InvalidCoproductCaseMap(hmap: java.util.Map[String, AttributeValue])         extends ScynamoDecodeError
+  case class InvalidCoproductCaseAttr(attributeValue: AttributeValue)                     extends ScynamoDecodeError
   case class ConversionError(input: String, to: String, cause: Option[Throwable])         extends ScynamoDecodeError
   case class GeneralError(message: String, cause: Option[Throwable])                      extends ScynamoDecodeError
 
@@ -36,7 +37,8 @@ object ScynamoDecodeError {
   implicit val scynamoDecodeErrorShow: Show[ScynamoDecodeError] = {
     case MissingField(fieldName, hmap)          => s"Could not find field '$fieldName' inside $hmap'"
     case TypeMismatch(expected, attributeValue) => s"Type mismatch, expected type $expected, given: $attributeValue"
-    case InvalidCoproductCase(hmap)             => s"Could not decode into one of the sealed traits cases: $hmap"
+    case InvalidCoproductCaseMap(hmap)          => s"Could not decode into one of the sealed trait's cases: $hmap"
+    case InvalidCoproductCaseAttr(av)           => s"Could not decode into one of the sealed trait's cases: $av"
     case ConversionError(in, to, eOpt)          => s"Error during conversion of '$in' to $to${eOpt.fold("")(e => s" cause: ${e.getMessage}")}"
     case GeneralError(message, cause)           => s"General decoder error: $message${cause.fold("")(e => s" with cause: ${e.getMessage}")}"
   }

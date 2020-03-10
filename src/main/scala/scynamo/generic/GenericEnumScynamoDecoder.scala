@@ -26,8 +26,7 @@ object ShapelessScynamoEnumDecoder extends EnumDecoderCoproductInstances
 
 trait EnumDecoderCoproductInstances {
   import scynamo.syntax.attributevalue._
-  implicit val deriveCNil: ShapelessScynamoEnumDecoder[CNil] = _ =>
-    Either.leftNec(ScynamoDecodeError.GeneralError("Cannot decode CNil", None))
+  implicit val deriveCNil: ShapelessScynamoEnumDecoder[CNil] = value => Either.leftNec(ScynamoDecodeError.InvalidCoproductCaseAttr(value))
 
   implicit def deriveCCons[K <: Symbol, V, T <: Coproduct](
       implicit
