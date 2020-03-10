@@ -137,7 +137,7 @@ trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with Scynam
               (keyDecoder.decode(key), valueDecoder.decode(value)).parMapN(_ -> _)
           }
           .map(_.toMap)
-    }
+      }
 
   implicit val attributeValueDecoder: ScynamoDecoder[AttributeValue] = attributeValue => Right(attributeValue)
 }
@@ -158,7 +158,7 @@ trait ScynamoIterableDecoder extends LowestPrioAutoDecoder {
 
           elems.map(_.result())
         case None => Either.leftNec(TypeMismatch(ScynamoList, attributeValue))
-    }
+      }
 }
 
 trait LowestPrioAutoDecoder {
