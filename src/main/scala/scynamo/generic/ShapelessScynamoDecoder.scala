@@ -5,9 +5,7 @@ import cats.instances.either._
 import cats.syntax.apply._
 import cats.syntax.either._
 import scynamo.ScynamoDecodeError._
-import scynamo.ScynamoType.ScynamoString
 import scynamo._
-import scynamo.syntax.attributevalue._
 import shapeless._
 import shapeless.labelled._
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
@@ -43,6 +41,8 @@ trait DecoderHListInstances extends ScynamoDecoderFunctions {
 }
 
 trait DecoderCoproductInstances extends ScynamoDecoderFunctions {
+  import scynamo.syntax.attributevalue._
+
   implicit def deriveCNil[Base]: ShapelessScynamoDecoder[Base, CNil] = value => Either.leftNec(InvalidCoproductCase(value))
 
   implicit def deriveCCons[Base, K <: Symbol, V, T <: Coproduct](
@@ -67,7 +67,7 @@ trait DecoderCoproductInstances extends ScynamoDecoderFunctions {
         typeTagAttrValue <- Option(value.get(opts.discriminator))
           .map(Right(_))
           .getOrElse(Either.leftNec(MissingField(name, value)))
-        typeTag <- accessOrTypeMismatch(typeTagAttrValue, ScynamoString)(_.sOpt)
+        typeTag <- typeTagAttrValue.asEither(ScynamoType.String)
         result <- if (name == typeTag) {
           sv.value.decode(AttributeValue.builder().m(value).build()).map(v => Inl(field[K](v)))
         } else {

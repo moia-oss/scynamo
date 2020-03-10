@@ -2,9 +2,8 @@ package scynamo
 
 import cats.data.EitherNec
 import scynamo.ScynamoEncoderTest.{Foo, Foo2}
-import scynamo.ScynamoType.ScynamoString
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 import scynamo.generic.auto._
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
 class ScynamoEncoderTest extends UnitTest {
   "ScynamoEncoder" should {
@@ -48,7 +47,7 @@ object ScynamoEncoderTest {
         AttributeValue.builder().s(s"$prefix$value").build()
 
       override def decode(attributeValue: AttributeValue): EitherNec[ScynamoDecodeError, Int] =
-        accessOrTypeMismatch(attributeValue, ScynamoString)(_.sOpt).map(_.stripPrefix(prefix).toInt)
+        attributeValue.asEither(ScynamoType.String).map(_.stripPrefix(prefix).toInt)
     }
 
     implicit val fooCodec: ObjectScynamoCodec[Foo] = scynamo.generic.semiauto.deriveScynamoCodec[Foo]
@@ -64,7 +63,7 @@ object ScynamoEncoderTest {
         AttributeValue.builder().s(s"$prefix$value").build()
 
       override def decode(attributeValue: AttributeValue): EitherNec[ScynamoDecodeError, Int] =
-        accessOrTypeMismatch(attributeValue, ScynamoString)(_.sOpt).map(_.stripPrefix(prefix).toInt)
+        attributeValue.asEither(ScynamoType.String).map(_.stripPrefix(prefix).toInt)
     }
   }
 }

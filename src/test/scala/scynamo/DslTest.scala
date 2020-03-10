@@ -25,7 +25,7 @@ class DslTest extends UnitTest {
 
       val input = AttributeValue.builder().build()
 
-      val result = input.sOpt
+      val result = input.asOption(ScynamoType.Bool)
 
       result should ===(None)
     }

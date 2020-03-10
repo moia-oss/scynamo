@@ -2,7 +2,7 @@ package scynamo.generic
 
 import cats.syntax.either._
 import cats.data.EitherNec
-import scynamo.{ScynamoDecodeError, ScynamoDecoder}
+import scynamo.{ScynamoDecodeError, ScynamoDecoder, ScynamoType}
 import shapeless._
 import shapeless.labelled._
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
@@ -35,7 +35,7 @@ trait EnumDecoderCoproductInstances {
       sv: LabelledGeneric.Aux[V, HNil],
       st: Lazy[ShapelessScynamoEnumDecoder[T]]
   ): ShapelessScynamoEnumDecoder[FieldType[K, V] :+: T] = attributeValue => {
-    if (attributeValue.sOpt.contains(key.value.name)) {
+    if (attributeValue.asOption(ScynamoType.String).contains(key.value.name)) {
       Right(Inl(field[K](sv.from(HNil))))
     } else {
       st.value.decode(attributeValue).map(Inr(_))
