@@ -2,11 +2,19 @@
 
 ## Documentation
 
-### Derivation of ScynamoCodec
+### Derivation
 
-For the `ScynamoEncoder`, `ScynamoDecoder` and `ScynamoCodec` `scynamo` supports both both `semiauto` and `auto` derivation.
+Scynamo provides both `semiauto` and `auto` derivation.  Note that
+mixing them is not a good idea and can lead to compile errors due to
+ambiguity of implicits.
 
-#### Semiautomatic Derivation
+To use the derivation mechanisms you can choose between:
+
+- import scynamo.generic.auto.__
+- import scynamo.generic.semiauto.__
+- directly use the `derive*` methods on the companions.
+
+#### Semiautomatic Derivation via import
 
 ```scala
 import scynamo.generic.semiauto._
@@ -15,6 +23,16 @@ clase class Foo(i: Int, s: String)
 
 object Foo {
   implicit val codec: ObjectScynamoCodec[Foo] = deriveScynamoCodec[Foo]
+}
+```
+
+#### Semiautomatic Derivation via companion
+
+```scala
+clase class Foo(i: Int, s: String)
+
+object Foo {
+  implicit val codec: ObjectScynamoCodec[Foo] = ObjectScynamoCodec.deriveScynamoCodec[Foo]
 }
 ```
 
@@ -29,19 +47,6 @@ val codec = implicitly[ObjectScynamoCodec[Foo]]
 ```
 
 NOTE: auto derivation does not respect custom overrides of
-Encoders/Decoders.  If you need that functionality, use `semiauto`
-derivation instead.
-
-## Release
-
-Every new commit in master is built and released as a -SNAPSHOT. Once you tested that everything works, do the following to create an actual release.
-
-Create an empty commit using git commit --allow-empty and specify which version you are releasing.
-
-Tag (annotated tag with description) the new commit with a v prefix, e.g. v1.0.0. The sbt-git plugin automatically sets the version to the tag without the v (1.0.0 in our example).
-
-Once the master pipeline runs, the version will be automatically published.
-
-### I pushed the *master* branch BEFORE the tag, what now?
-
-Don't worry, you can just trigger the CircleCI pipeline manually again for master even **after** pushing the tag.
+Encoders/Decoders from the companion of your classes.  If you need
+that functionality, use `semiauto` derivation instead and avoid `auto`
+derivation.
