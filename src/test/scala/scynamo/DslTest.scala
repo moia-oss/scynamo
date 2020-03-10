@@ -15,7 +15,7 @@ class DslTest extends UnitTest {
     "allow encoding" in {
       import scynamo.syntax.encoder._
 
-      val result = "some-string".encode
+      val result = "some-string".encoded
 
       result.s should ===("some-string")
     }

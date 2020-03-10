@@ -44,7 +44,7 @@ class SemiautoDerivationTest extends UnitTest {
         }
 
         Inspectors.forAll(List[Foobar](Foo, Bar)) { input =>
-          val encoded = input.encodeMap
+          val encoded = input.encodedMap
           val decoded = encoded.decode[Foobar]
 
           decoded should ===(Right(input))
@@ -65,7 +65,7 @@ class SemiautoDerivationTest extends UnitTest {
 
         val input = Foo("test")
 
-        val result = input.encode.decode[Foo]
+        val result = input.encoded.decode[Foo]
 
         result should ===(Right(input))
       }
@@ -75,11 +75,11 @@ class SemiautoDerivationTest extends UnitTest {
       "encode values as a single string" in {
         val input: Shape = Shape.Rectangle
 
-        ScynamoEncoder[Shape].encode(input) should ===("Rectangle".encode)
+        ScynamoEncoder[Shape].encode(input) should ===("Rectangle".encoded)
       }
 
       "decode values from a single string" in {
-        val input: AttributeValue = "Square".encode
+        val input: AttributeValue = "Square".encoded
 
         ScynamoDecoder[Shape].decode(input) should ===(Right(Shape.Square))
       }

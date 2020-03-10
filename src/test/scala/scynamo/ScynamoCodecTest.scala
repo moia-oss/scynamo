@@ -93,9 +93,9 @@ class ScynamoCodecTest extends UnitTest {
           }
       }(_.toString)
 
-      codec.encode(Bar) should ===("Bar".encode)
+      codec.encode(Bar) should ===("Bar".encoded)
 
-      codec.decode("Baz".encode) should matchPattern {
+      codec.decode("Baz".encoded) should matchPattern {
         case Left(`error`) =>
       }
     }
