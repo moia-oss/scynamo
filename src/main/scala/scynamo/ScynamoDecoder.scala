@@ -28,7 +28,7 @@ object ScynamoDecodeError {
   case class MissingField(fieldName: String, hmap: java.util.Map[String, AttributeValue]) extends ScynamoDecodeError
   case class TypeMismatch(expected: ScynamoType, attributeValue: AttributeValue)          extends ScynamoDecodeError
   case class InvalidCoproductCase(hmap: java.util.Map[String, AttributeValue])            extends ScynamoDecodeError
-  case class ConversionError(message: String, cause: Option[Throwable])                   extends ScynamoDecodeError
+  case class ConversionError(input: String, to: String, cause: Option[Throwable])         extends ScynamoDecodeError
   case class GeneralError(message: String, cause: Option[Throwable])                      extends ScynamoDecodeError
 
   implicit val scynamoDecodeErrorEq: Eq[ScynamoDecodeError] = Eq.fromUniversalEquals[ScynamoDecodeError]
@@ -37,7 +37,7 @@ object ScynamoDecodeError {
     case MissingField(fieldName, hmap)          => s"Could not find field '$fieldName' inside $hmap'"
     case TypeMismatch(expected, attributeValue) => s"Type mismatch, expected type $expected, given: $attributeValue"
     case InvalidCoproductCase(hmap)             => s"Could not decode into one of the sealed traits cases: $hmap"
-    case ConversionError(message, cause)        => s"Error during conversion: $message${cause.fold("")(e => s" with cause: ${e.getMessage}")}"
+    case ConversionError(in, to, eOpt)          => s"Error during conversion of '$in' to $to${eOpt.fold("")(e => s" cause: ${e.getMessage}")}"
     case GeneralError(message, cause)           => s"General decoder error: $message${cause.fold("")(e => s" with cause: ${e.getMessage}")}"
   }
 }
@@ -72,31 +72,30 @@ trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with Scynam
   implicit val stringDecoder: ScynamoDecoder[String] = attributeValue => attributeValue.asEither(ScynamoType.String)
 
   implicit val intDecoder: ScynamoDecoder[Int] =
-    attributeValue => attributeValue.asEither(ScynamoType.Number).flatMap(s => convert(s)(_.toInt))
+    attributeValue => attributeValue.asEither(ScynamoType.Number).flatMap(s => convert(s, "Int")(_.toInt))
 
   implicit val longDecoder: ScynamoDecoder[Long] =
-    attributeValue => attributeValue.asEither(ScynamoType.Number).flatMap(s => convert(s)(_.toLong))
+    attributeValue => attributeValue.asEither(ScynamoType.Number).flatMap(s => convert(s, "Long")(_.toLong))
 
   implicit val bigIntDecoder: ScynamoDecoder[BigInt] =
-    attributeValue => attributeValue.asEither(ScynamoType.Number).flatMap(s => convert(s)(BigInt(_)))
+    attributeValue => attributeValue.asEither(ScynamoType.Number).flatMap(s => convert(s, "BigInt")(BigInt(_)))
 
   implicit val floatDecoder: ScynamoDecoder[Float] =
-    attributeValue => attributeValue.asEither(ScynamoType.Number).flatMap(s => convert(s)(_.toFloat))
+    attributeValue => attributeValue.asEither(ScynamoType.Number).flatMap(s => convert(s, "Float")(_.toFloat))
 
   implicit val doubleDecoder: ScynamoDecoder[Double] =
-    attributeValue => attributeValue.asEither(ScynamoType.Number).flatMap(s => convert(s)(_.toDouble))
+    attributeValue => attributeValue.asEither(ScynamoType.Number).flatMap(s => convert(s, "Double")(_.toDouble))
 
   implicit val bigDecimalDecoder: ScynamoDecoder[BigDecimal] =
-    attributeValue => attributeValue.asEither(ScynamoType.Number).flatMap(s => convert(s)(BigDecimal(_)))
+    attributeValue => attributeValue.asEither(ScynamoType.Number).flatMap(s => convert(s, "BigDecimal")(BigDecimal(_)))
 
-  implicit val booleanDecoder: ScynamoDecoder[Boolean] =
-    attributeValue => attributeValue.asEither(ScynamoType.Bool)
+  implicit val booleanDecoder: ScynamoDecoder[Boolean] = attributeValue => attributeValue.asEither(ScynamoType.Bool)
 
   implicit val instantDecoder: ScynamoDecoder[Instant] =
     attributeValue =>
       for {
         nstring <- attributeValue.asEither(ScynamoType.Number)
-        result  <- convert(nstring)(_.toLong)
+        result  <- convert(nstring, "Long")(_.toLong)
       } yield Instant.ofEpochMilli(result)
 
   implicit def seqDecoder[A: ScynamoDecoder]: ScynamoDecoder[scala.collection.immutable.Seq[A]] = iterableDecoder
@@ -119,7 +118,7 @@ trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with Scynam
   implicit val durationDecoder: ScynamoDecoder[Duration] = longDecoder.map(n => Duration(n, TimeUnit.NANOSECONDS))
 
   implicit val uuidDecoder: ScynamoDecoder[UUID] = attributeValue =>
-    attributeValue.asEither(ScynamoType.String).flatMap(s => convert(s)(UUID.fromString))
+    attributeValue.asEither(ScynamoType.String).flatMap(s => convert(s, "UUID")(UUID.fromString))
 
   implicit def mapDecoder[A, B](
       implicit keyDecoder: ScynamoKeyDecoder[A],
@@ -133,7 +132,7 @@ trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with Scynam
               (keyDecoder.decode(key), valueDecoder.decode(value)).parMapN(_ -> _)
           }
           .map(_.toMap)
-    }
+      }
 
   implicit val attributeValueDecoder: ScynamoDecoder[AttributeValue] = attributeValue => Right(attributeValue)
 }
@@ -154,7 +153,7 @@ trait ScynamoIterableDecoder extends LowestPrioAutoDecoder {
 
           elems.map(_.result())
         case None => Either.leftNec(TypeMismatch(ScynamoType.List, attributeValue))
-    }
+      }
 }
 
 trait LowestPrioAutoDecoder {
@@ -167,11 +166,11 @@ trait LowestPrioAutoDecoder {
 object ScynamoDecoderFunctions extends ScynamoDecoderFunctions
 
 trait ScynamoDecoderFunctions {
-  def convert[A, B](s: A)(convertor: A => B): EitherNec[ScynamoDecodeError, B] =
+  def convert[A, B](s: A, to: String = "(unknown)")(convertor: A => B): EitherNec[ScynamoDecodeError, B] =
     try {
       Right(convertor(s))
     } catch {
-      case NonFatal(e) => Either.leftNec(ConversionError(s"Could not convert: ${e.getMessage}", Some(e)))
+      case NonFatal(e) => Either.leftNec(ConversionError(s.toString, to, Some(e)))
     }
 }
 
@@ -206,6 +205,6 @@ object ScynamoKeyDecoder {
   implicit val uuidKeyDecoder: ScynamoKeyDecoder[UUID] = s => {
     val result = Either.catchOnly[IllegalArgumentException](UUID.fromString(s))
 
-    result.leftMap(e => NonEmptyChain.one(ScynamoDecodeError.ConversionError(s"Could not convert to UUID: $s", Some(e))))
+    result.leftMap(e => NonEmptyChain.one(ScynamoDecodeError.ConversionError(s"$s", "UUID", Some(e))))
   }
 }
