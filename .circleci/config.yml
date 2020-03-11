@@ -1,0 +1,72 @@
+version: 2
+
+references:
+  dependencies_key: &dependencies_key
+    sbt-v1-deps-{{ checksum "project/build.properties" }}-{{ checksum "project/plugins.sbt" }}-{{ checksum "build.sbt" }}
+
+  restore_dependencies: &restore_dependencies
+    restore_cache:
+      keys:
+        - *dependencies_key
+
+  sbt_image: &sbt_image
+    moia/scala-on-circleci:8u222-2.12.10-sbt-1.3.3
+
+jobs:
+  test:
+    docker:
+      - image: *sbt_image
+    steps:
+      - checkout
+      - *restore_dependencies
+      - run:
+         name: Compile and Test
+         command: |
+           sbt -batch "; scalafmtCheckAll; +test; +doc; version"
+      - save_cache:
+          key: *dependencies_key
+          paths:
+            - ~/.m2
+            - ~/.ivy2
+            - ~/.sbt
+            - ~/.cache/coursier/
+
+  publishRelease:
+    docker:
+      - image: *sbt_image
+    steps:
+      - checkout
+      - *restore_dependencies
+      - run:
+          name: Publish
+          command: |
+            sbt -batch "; version; +publish"
+      - save_cache:
+          key: *dependencies_key
+          paths:
+            - ~/.m2
+            - ~/.ivy2
+            - ~/.sbt
+            - ~/.cache/coursier/
+
+workflows:
+  version: 2
+  testDevelopmentBranch:
+    jobs:
+      - test:
+          context: sbt-release-ci-library
+          filters:
+            branches:
+              ignore:
+                - master
+            tags:
+              ignore: /.*/
+
+  publishRelease:
+    jobs:
+      - publishRelease:
+          context: sbt-release-ci-library
+          filters:
+            branches:
+              only:
+                - master
