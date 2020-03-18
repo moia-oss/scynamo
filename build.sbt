@@ -23,11 +23,11 @@ lazy val root = (project in file("."))
       .map(user => Credentials("Artifactory Realm", "moiadev.jfrog.io", sys.env(user), sys.env("ARTIFACTORY_APIKEY"))),
     publishTo := Some("Artifactory Realm".at("https://moiadev.jfrog.io/moiadev/sbt-release-local/")),
     libraryDependencies ++= Seq(
-      "org.scalatest"          %% "scalatest"               % "3.1.0" % Test,
+      "org.scalatest"          %% "scalatest"               % "3.1.1" % Test,
       "com.chuusai"            %% "shapeless"               % "2.3.3",
-      "software.amazon.awssdk" % "dynamodb"                 % "2.10.65",
-      "org.typelevel"          %% "cats-core"               % "2.1.0",
-      "org.scalacheck"         %% "scalacheck"              % "1.14.1" % Test,
+      "software.amazon.awssdk" % "dynamodb"                 % "2.10.86",
+      "org.typelevel"          %% "cats-core"               % "2.1.1",
+      "org.scalacheck"         %% "scalacheck"              % "1.14.3" % Test,
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.4"
     )
   )

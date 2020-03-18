@@ -1,2 +1,2 @@
-addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.3.1")
+addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.3.2")
 addSbtPlugin("com.typesafe.sbt" % "sbt-git" % "1.0.0")
