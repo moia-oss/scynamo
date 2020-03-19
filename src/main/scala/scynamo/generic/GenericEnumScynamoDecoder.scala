@@ -1,7 +1,8 @@
 package scynamo.generic
 
-import cats.syntax.either._
 import cats.data.EitherNec
+import cats.syntax.either._
+import scynamo.StackFrame.Enum
 import scynamo.{ScynamoDecodeError, ScynamoDecoder, ScynamoType}
 import shapeless._
 import shapeless.labelled._
@@ -26,7 +27,7 @@ object ShapelessScynamoEnumDecoder extends EnumDecoderCoproductInstances
 
 trait EnumDecoderCoproductInstances {
   import scynamo.syntax.attributevalue._
-  implicit val deriveCNil: ShapelessScynamoEnumDecoder[CNil] = value => Either.leftNec(ScynamoDecodeError.InvalidCoproductCaseAttr(value))
+  implicit val deriveCNil: ShapelessScynamoEnumDecoder[CNil] = value => Either.leftNec(ScynamoDecodeError.invalidCoproductCaseAttr(value))
 
   implicit def deriveCCons[K <: Symbol, V, T <: Coproduct](
       implicit
@@ -37,7 +38,7 @@ trait EnumDecoderCoproductInstances {
     if (attributeValue.asOption(ScynamoType.String).contains(key.value.name)) {
       Right(Inl(field[K](sv.from(HNil))))
     } else {
-      st.value.decode(attributeValue).map(Inr(_))
+      st.value.decode(attributeValue).map(Inr(_)).leftMap(_.map(_.push(Enum(key.value.name))))
     }
   }
 }

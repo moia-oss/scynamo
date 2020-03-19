@@ -4,7 +4,7 @@ import cats.data.EitherNec
 import cats.instances.either._
 import cats.syntax.apply._
 import cats.syntax.either._
-import scynamo.ScynamoDecodeError._
+import scynamo.StackFrame.{Attr, Case}
 import scynamo._
 import shapeless._
 import shapeless.labelled._
@@ -31,9 +31,9 @@ trait DecoderHListInstances extends ScynamoDecoderFunctions {
       val fieldAttrValue = Option(value.get(fieldName))
 
       val decodedHead = (fieldAttrValue, sv.value.defaultValue) match {
-        case (Some(field), _)      => sv.value.decode(field)
+        case (Some(field), _)      => sv.value.decode(field).leftMap(x => x.map(_.push(Attr(fieldName))))
         case (None, Some(default)) => Right(default)
-        case (None, None)          => Either.leftNec(MissingField(fieldName, value))
+        case (None, None)          => Either.leftNec(ScynamoDecodeError.missingField(fieldName, value))
       }
 
       (decodedHead.map(field[K](_)), st.value.decodeMap(value)).mapN(_ :: _)
@@ -43,7 +43,8 @@ trait DecoderHListInstances extends ScynamoDecoderFunctions {
 trait DecoderCoproductInstances extends ScynamoDecoderFunctions {
   import scynamo.syntax.attributevalue._
 
-  implicit def deriveCNil[Base]: ShapelessScynamoDecoder[Base, CNil] = value => Either.leftNec(InvalidCoproductCaseMap(value))
+  implicit def deriveCNil[Base]: ShapelessScynamoDecoder[Base, CNil] =
+    value => Either.leftNec(ScynamoDecodeError.invalidCoproductCaseMap(value))
 
   implicit def deriveCCons[Base, K <: Symbol, V, T <: Coproduct](
       implicit
@@ -52,7 +53,13 @@ trait DecoderCoproductInstances extends ScynamoDecoderFunctions {
       st: Lazy[ShapelessScynamoDecoder[Base, T]],
       opts: ScynamoSealedTraitOpts[Base] = ScynamoSealedTraitOpts.default[Base]
   ): ShapelessScynamoDecoder[Base, FieldType[K, V] :+: T] =
-    value => deriveCConsTagged.decodeMap(value).orElse(deriveCConsNested.decodeMap(value))
+    value => {
+      if (value.containsKey(opts.discriminator)) {
+        deriveCConsTagged.decodeMap(value)
+      } else {
+        deriveCConsNested.decodeMap(value)
+      }
+    }
 
   def deriveCConsTagged[Base, K <: Symbol, V, T <: Coproduct](
       implicit
@@ -66,10 +73,10 @@ trait DecoderCoproductInstances extends ScynamoDecoderFunctions {
       for {
         typeTagAttrValue <- Option(value.get(opts.discriminator))
           .map(Right(_))
-          .getOrElse(Either.leftNec(MissingField(name, value)))
+          .getOrElse(Either.leftNec(ScynamoDecodeError.missingField(name, value)))
         typeTag <- typeTagAttrValue.asEither(ScynamoType.String)
         result <- if (name == typeTag) {
-          sv.value.decode(AttributeValue.builder().m(value).build()).map(v => Inl(field[K](v)))
+          sv.value.decode(AttributeValue.builder().m(value).build()).map(v => Inl(field[K](v))).leftMap(_.map(_.push(Case(name))))
         } else {
           st.value.decodeMap(value).map(Inr(_))
         }
@@ -84,8 +91,9 @@ trait DecoderCoproductInstances extends ScynamoDecoderFunctions {
       opts: ScynamoSealedTraitOpts[Base]
   ): ShapelessScynamoDecoder[Base, FieldType[K, V] :+: T] =
     value => {
-      Option(value.get(opts.transform(key.value.name))) match {
-        case Some(nestedValue) => sv.value.decode(nestedValue).map(v => Inl(field[K](v)))
+      val name = opts.transform(key.value.name)
+      Option(value.get(name)) match {
+        case Some(nestedValue) => sv.value.decode(nestedValue).map(v => Inl(field[K](v))).leftMap(_.map(_.push(Case(name))))
         case _                 => st.value.decodeMap(value).map(Inr(_))
       }
     }
