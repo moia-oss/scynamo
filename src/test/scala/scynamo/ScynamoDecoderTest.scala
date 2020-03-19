@@ -2,7 +2,9 @@ package scynamo
 
 import java.util.Collections
 
-import org.scalatest.Inside
+import org.scalatest.{Inside, Inspectors}
+import scynamo.StackFrame.{Attr, Case, Enum}
+import scynamo.generic.ScynamoSealedTraitOpts
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
 class ScynamoDecoderTest extends UnitTest {
@@ -77,5 +79,53 @@ class ScynamoDecoderTest extends UnitTest {
 
       result should ===(Right(Foo("the-a", None)))
     }
+
+    "provide a stack to the error for nested case classes" in {
+      import scynamo.generic.auto._
+      import scynamo.syntax.encoder._
+
+      case class Foo(bar: Bar)
+      case class Bar(baz: Baz)
+      sealed trait Baz
+      case class Qux(answer: Int) extends Baz
+
+      val input: AttributeValue = Map(
+        "bar" -> Map("baz" -> Map(ScynamoSealedTraitOpts.DEFAULT_DISCRIMINATOR -> "Qux".encoded, "answer" -> "wrong type!".encoded)).encoded
+      ).encoded
+
+      val decoded = ObjectScynamoCodec[Foo].decode(input)
+
+      Inside.inside(decoded) {
+        case Left(errs) =>
+          Inspectors.forAll(errs.toNonEmptyList.toList)(err =>
+            (err.stack.frames should contain).theSameElementsInOrderAs(List(Attr("bar"), Attr("baz"), Case("Qux"), Attr("answer")))
+          )
+      }
+    }
+
+    "provide a stack to the error with enum codec" in {
+      import EnumCodecTest._
+      import scynamo.syntax.encoder._
+      val input = Map("test" -> "ABCDEFG").encoded
+
+      val result = ObjectScynamoCodec[Foobar].decode(input)
+
+      Inside.inside(result) {
+        case Left(errs) => errs.head.stack.frames should ===(List[StackFrame](Attr("test"), Enum("Foo")))
+      }
+    }
+  }
+}
+
+object EnumCodecTest {
+  sealed trait Test
+  case object Foo extends Test
+  object Test {
+    implicit val codec: ScynamoEnumCodec[Test] = scynamo.generic.semiauto.deriveScynamoEnumCodec[Test]
+  }
+
+  case class Foobar(test: Test)
+  object Foobar {
+    implicit val codec: ObjectScynamoCodec[Foobar] = ObjectScynamoCodec.deriveScynamoCodec[Foobar]
   }
 }

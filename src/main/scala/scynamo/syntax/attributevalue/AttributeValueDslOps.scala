@@ -5,7 +5,7 @@ import java.util
 import cats.syntax.either._
 import cats.data.NonEmptyChain
 import scynamo.ScynamoDecodeError.TypeMismatch
-import scynamo.ScynamoType
+import scynamo.{ScynamoDecodeError, ScynamoType}
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
@@ -40,7 +40,7 @@ class AttributeValueDslOps(val attributeValue: AttributeValue) extends AnyVal {
 
   def asEither[A, R](typ: ScynamoType.Aux[R]): Either[NonEmptyChain[TypeMismatch], R] =
     attributeValue.asOption(typ) match {
-      case None        => Either.leftNec(TypeMismatch(typ, attributeValue))
+      case None        => Either.leftNec(ScynamoDecodeError.typeMismatch(typ, attributeValue))
       case Some(value) => Right(value)
     }
 }

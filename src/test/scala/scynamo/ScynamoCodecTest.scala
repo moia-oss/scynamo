@@ -1,9 +1,8 @@
 package scynamo
 
-import org.scalatest.Inspectors
-import scynamo.ScynamoDecodeError.GeneralError
-import scynamo.syntax.encoder._
 import cats.data.NonEmptyChain
+import org.scalatest.Inspectors
+import scynamo.syntax.encoder._
 
 class ScynamoCodecTest extends UnitTest {
   "ScynamoCodec" should {
@@ -82,7 +81,7 @@ class ScynamoCodecTest extends UnitTest {
       case object Foo extends Foobar
       case object Bar extends Foobar
 
-      val error = NonEmptyChain.one(GeneralError(s"Unknown tag", None))
+      val error = NonEmptyChain.one(ScynamoDecodeError.generalError(s"Unknown tag", None))
       val codec = ScynamoCodec[String].itransform[Foobar] {
         case Left(value) => Left(value)
         case Right(value) =>
