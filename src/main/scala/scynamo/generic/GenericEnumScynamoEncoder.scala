@@ -1,6 +1,7 @@
 package scynamo.generic
 
-import scynamo.ScynamoEncoder
+import cats.data.EitherNec
+import scynamo.{ScynamoEncodeError, ScynamoEncoder}
 import shapeless._
 import shapeless.labelled._
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
@@ -17,7 +18,7 @@ trait GenericScynamoEnumEncoderInstances {
 }
 
 trait ShapelessScynamoEnumEncoder[A] {
-  def encode(value: A): AttributeValue
+  def encode(value: A): EitherNec[ScynamoEncodeError, AttributeValue]
 }
 
 object ShapelessScynamoEnumEncoder extends EnumEncoderCoproductInstances
@@ -30,7 +31,7 @@ trait EnumEncoderCoproductInstances {
       key: Witness.Aux[K],
       st: Lazy[ShapelessScynamoEnumEncoder[T]]
   ): ShapelessScynamoEnumEncoder[FieldType[K, V] :+: T] = {
-    case Inl(_)    => AttributeValue.builder().s(key.value.name).build()
+    case Inl(_)    => Right(AttributeValue.builder().s(key.value.name).build())
     case Inr(tail) => st.value.encode(tail)
   }
 }

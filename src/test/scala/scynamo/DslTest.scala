@@ -17,7 +17,7 @@ class DslTest extends UnitTest {
 
       val result = "some-string".encoded
 
-      result.s should ===("some-string")
+      result.map(_.s) should ===(Right("some-string"))
     }
 
     "allow option access to fields in AttributeValue" in {

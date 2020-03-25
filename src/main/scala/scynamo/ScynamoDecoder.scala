@@ -7,10 +7,9 @@ import java.util.concurrent.TimeUnit
 import cats.data.{EitherNec, NonEmptyChain}
 import cats.instances.either._
 import cats.instances.vector._
-import cats.kernel.Eq
 import cats.syntax.either._
 import cats.syntax.parallel._
-import cats.{Functor, SemigroupK, Show}
+import cats.{Functor, SemigroupK}
 import scynamo.generic.auto.AutoDerivationUnlocked
 import scynamo.generic.{GenericScynamoDecoder, SemiautoDerivationDecoder}
 import shapeless.Lazy
@@ -37,57 +36,6 @@ object StackFrame {
   case class Attr(name: String) extends StackFrame
   case class Case(name: String) extends StackFrame
   case class Enum(name: String) extends StackFrame
-}
-
-sealed abstract class ScynamoDecodeError extends Product with Serializable {
-  def stack: ErrorStack
-  def push(frame: StackFrame): ScynamoDecodeError = this match {
-    case err @ ScynamoDecodeError.MissingField(_, _, _)          => err.copy(stack = err.stack.push(frame))
-    case err @ ScynamoDecodeError.TypeMismatch(_, _, _)          => err.copy(stack = err.stack.push(frame))
-    case err @ ScynamoDecodeError.InvalidCoproductCaseMap(_, _)  => err.copy(stack = err.stack.push(frame))
-    case err @ ScynamoDecodeError.InvalidCoproductCaseAttr(_, _) => err.copy(stack = err.stack.push(frame))
-    case err @ ScynamoDecodeError.ConversionError(_, _, _, _)    => err.copy(stack = err.stack.push(frame))
-    case err @ ScynamoDecodeError.GeneralError(_, _, _)          => err.copy(stack = err.stack.push(frame))
-  }
-}
-
-object ScynamoDecodeError {
-  case class MissingField(fieldName: String, hmap: java.util.Map[String, AttributeValue], stack: ErrorStack) extends ScynamoDecodeError
-  def missingField(fieldName: String, hmap: java.util.Map[String, AttributeValue]): MissingField =
-    MissingField(fieldName, hmap, ErrorStack.empty)
-
-  case class TypeMismatch(expected: ScynamoType, attributeValue: AttributeValue, stack: ErrorStack) extends ScynamoDecodeError
-  def typeMismatch(expected: ScynamoType, attributeValue: AttributeValue): TypeMismatch =
-    TypeMismatch(expected, attributeValue, ErrorStack.empty)
-
-  case class InvalidCoproductCaseMap(hmap: java.util.Map[String, AttributeValue], stack: ErrorStack) extends ScynamoDecodeError
-  def invalidCoproductCaseMap(hmap: java.util.Map[String, AttributeValue]): InvalidCoproductCaseMap =
-    InvalidCoproductCaseMap(hmap, ErrorStack.empty)
-
-  case class InvalidCoproductCaseAttr(attributeValue: AttributeValue, stack: ErrorStack) extends ScynamoDecodeError
-  def invalidCoproductCaseAttr(attributeValue: AttributeValue): InvalidCoproductCaseAttr =
-    InvalidCoproductCaseAttr(attributeValue, ErrorStack.empty)
-
-  case class ConversionError(input: String, to: String, cause: Option[Throwable], stack: ErrorStack) extends ScynamoDecodeError
-  def conversionError(input: String, to: String, cause: Option[Throwable]): ConversionError =
-    ConversionError(input, to, cause, ErrorStack.empty)
-
-  case class GeneralError(message: String, cause: Option[Throwable], stack: ErrorStack) extends ScynamoDecodeError
-  def generalError(message: String, cause: Option[Throwable]): GeneralError =
-    GeneralError(message, cause, ErrorStack.empty)
-
-  implicit val scynamoDecodeErrorEq: Eq[ScynamoDecodeError] = Eq.fromUniversalEquals[ScynamoDecodeError]
-
-  implicit val scynamoDecodeErrorShow: Show[ScynamoDecodeError] = {
-    case MissingField(fieldName, hmap, stack)          => s"Could not find field '$fieldName' inside $hmap, stack: $stack"
-    case TypeMismatch(expected, attributeValue, stack) => s"Type mismatch, expected type $expected, given: $attributeValue, stack: $stack"
-    case InvalidCoproductCaseMap(hmap, stack)          => s"Could not decode into one of the sealed trait's cases: $hmap, stack: $stack"
-    case InvalidCoproductCaseAttr(av, stack)           => s"Could not decode into one of the sealed trait's cases: $av, stack: $stack"
-    case ConversionError(in, to, eOpt, stack) =>
-      s"Error during conversion of '$in' to $to${eOpt.fold("")(e => s" cause: ${e.getMessage}")}, stack: $stack"
-    case GeneralError(message, cause, stack) =>
-      s"General decoder error: $message${cause.fold("")(e => s" with cause: ${e.getMessage}")}, stack: $stack"
-  }
 }
 
 trait ScynamoDecoder[A] extends ScynamoDecoderFunctions { self =>

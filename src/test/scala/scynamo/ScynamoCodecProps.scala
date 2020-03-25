@@ -23,7 +23,9 @@ class ScynamoCodecProps extends Properties("ScynamoCodec") {
 
   propertyWithSeed("decode.encode === id (BigDecimal)", None) = Prop.forAll { value: BigDecimal => decodeAfterEncodeIsIdentity(value) }
 
-  propertyWithSeed("decode.encode === id (string)", None) = Prop.forAll { value: String => decodeAfterEncodeIsIdentity(value) }
+  propertyWithSeed("decode.encode === id (nonempty string)", None) = Prop.forAll(Gen.nonEmptyListOf(Gen.alphaNumChar).map(_.mkString)) {
+    value: String => decodeAfterEncodeIsIdentity(value)
+  }
 
   propertyWithSeed("decode.encode === id (boolean)", None) = Prop.forAll { value: Boolean => decodeAfterEncodeIsIdentity(value) }
 
@@ -67,7 +69,8 @@ class ScynamoCodecProps extends Properties("ScynamoCodec") {
 
   private[this] def decodeAfterEncodeIsIdentity[A](value: A)(implicit codec: ScynamoCodec[A]): Prop = {
     val encoded = codec.encode(value)
-    val decoded = codec.decode(encoded)
+    val decoded = encoded.flatMap(codec.decode)
+
     (decoded == Right(value)) :| s"encoded = $encoded" :| s"decoded = $decoded"
   }
 }

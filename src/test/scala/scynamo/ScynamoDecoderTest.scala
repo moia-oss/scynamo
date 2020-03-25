@@ -2,6 +2,7 @@ package scynamo
 
 import java.util.Collections
 
+import cats.data.EitherNec
 import org.scalatest.{Inside, Inspectors}
 import scynamo.StackFrame.{Attr, Case, Enum}
 import scynamo.generic.ScynamoSealedTraitOpts
@@ -89,11 +90,13 @@ class ScynamoDecoderTest extends UnitTest {
       sealed trait Baz
       case class Qux(answer: Int) extends Baz
 
-      val input: AttributeValue = Map(
-        "bar" -> Map("baz" -> Map(ScynamoSealedTraitOpts.DEFAULT_DISCRIMINATOR -> "Qux".encoded, "answer" -> "wrong type!".encoded)).encoded
+      val input: EitherNec[ScynamoEncodeError, AttributeValue] = Map(
+        "bar" -> Map(
+          "baz" -> Map(ScynamoSealedTraitOpts.DEFAULT_DISCRIMINATOR -> "Qux", "answer" -> "wrong type!")
+        )
       ).encoded
 
-      val decoded = ObjectScynamoCodec[Foo].decode(input)
+      val decoded = input.flatMap(ObjectScynamoCodec[Foo].decode)
 
       Inside.inside(decoded) {
         case Left(errs) =>
@@ -108,7 +111,7 @@ class ScynamoDecoderTest extends UnitTest {
       import scynamo.syntax.encoder._
       val input = Map("test" -> "ABCDEFG").encoded
 
-      val result = ObjectScynamoCodec[Foobar].decode(input)
+      val result = input.flatMap(ObjectScynamoCodec[Foobar].decode)
 
       Inside.inside(result) {
         case Left(errs) => errs.head.stack.frames should ===(List[StackFrame](Attr("test"), Enum("Foo")))
