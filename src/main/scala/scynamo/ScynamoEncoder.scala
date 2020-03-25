@@ -83,7 +83,19 @@ trait DefaultScynamoEncoderInstances extends FailingScynamoEncoderInstances {
         .map(hm => AttributeValue.builder().m(hm).build())
     }
 
-  implicit val attributeValueEncoder: ScynamoEncoder[AttributeValue] = value => Right(value)
+  implicit val attributeValueEncoder: ScynamoEncoder[AttributeValue] = { value =>
+    import scynamo.syntax.attributevalue._
+
+    val nonEmptyString    = value.asOption(ScynamoType.String).map(x => ScynamoType.String       -> x.nonEmpty)
+    val nonEmptyStringSet = value.asOption(ScynamoType.StringSet).map(x => ScynamoType.StringSet -> (x.size() > 0))
+    val nonEmptyNumberSet = value.asOption(ScynamoType.NumberSet).map(x => ScynamoType.NumberSet -> (x.size() > 0))
+    val nonEmptyBinarySet = value.asOption(ScynamoType.BinarySet).map(x => ScynamoType.BinarySet -> (x.size() > 0))
+
+    nonEmptyString.orElse(nonEmptyStringSet).orElse(nonEmptyNumberSet).orElse(nonEmptyBinarySet) match {
+      case Some((typ, false))     => Either.leftNec(ScynamoEncodeError.invalidEmptyValue(typ))
+      case Some((_, true)) | None => Right(value)
+    }
+  }
 
   implicit def eitherScynamoErrorEncoder[A: ScynamoEncoder]: ScynamoEncoder[EitherNec[ScynamoEncodeError, A]] = {
     case Left(value)  => Left(value)
