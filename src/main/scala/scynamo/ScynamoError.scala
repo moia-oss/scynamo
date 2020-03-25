@@ -6,6 +6,15 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
 sealed abstract class ScynamoError extends Product with Serializable {
   def stack: ErrorStack
+
+  def show: String = ScynamoError.scynamoErrorShow.show(this)
+}
+
+object ScynamoError {
+  implicit val scynamoErrorShow: Show[ScynamoError] = {
+    case error: ScynamoEncodeError => Show[ScynamoEncodeError].show(error)
+    case error: ScynamoDecodeError => Show[ScynamoDecodeError].show(error)
+  }
 }
 
 sealed abstract class ScynamoEncodeError extends ScynamoError {
@@ -24,9 +33,9 @@ object ScynamoEncodeError {
   def generalError(message: String, cause: Option[Throwable]): GeneralError = GeneralError(message, cause, ErrorStack.empty)
 
   implicit val scynamoEncoderErrorShow: Show[ScynamoEncodeError] = {
-    case InvalidEmptyValue(typ, stack) => s"DynamoDB does not support encoding the empty value of type $typ, error stack: $stack"
+    case InvalidEmptyValue(typ, stack) => s"DynamoDB does not support encoding the empty value of type $typ, error stack: $stack."
     case GeneralError(message, cause, stack) =>
-      s"General encoder error: $message${cause.fold("")(e => s" with cause: ${e.getMessage}")}, stack: $stack"
+      s"General encoder error: $message${cause.fold("")(e => s" with cause: ${e.getMessage}")}, stack: $stack."
   }
 }
 
@@ -69,13 +78,13 @@ object ScynamoDecodeError {
   implicit val scynamoDecodeErrorEq: Eq[ScynamoDecodeError] = Eq.fromUniversalEquals[ScynamoDecodeError]
 
   implicit val scynamoDecodeErrorShow: Show[ScynamoDecodeError] = {
-    case MissingField(fieldName, hmap, stack)          => s"Could not find field '$fieldName' inside $hmap, stack: $stack"
-    case TypeMismatch(expected, attributeValue, stack) => s"Type mismatch, expected type $expected, given: $attributeValue, stack: $stack"
-    case InvalidCoproductCaseMap(hmap, stack)          => s"Could not decode into one of the sealed trait's cases: $hmap, stack: $stack"
-    case InvalidCoproductCaseAttr(av, stack)           => s"Could not decode into one of the sealed trait's cases: $av, stack: $stack"
+    case MissingField(fieldName, hmap, stack)          => s"Could not find field '$fieldName' inside $hmap, stack: $stack."
+    case TypeMismatch(expected, attributeValue, stack) => s"Type mismatch, expected type $expected, given: $attributeValue, stack: $stack."
+    case InvalidCoproductCaseMap(hmap, stack)          => s"Could not decode into one of the sealed trait's cases: $hmap, stack: $stack."
+    case InvalidCoproductCaseAttr(av, stack)           => s"Could not decode into one of the sealed trait's cases: $av, stack: $stack."
     case ConversionError(in, to, eOpt, stack) =>
-      s"Error during conversion of '$in' to $to${eOpt.fold("")(e => s" cause: ${e.getMessage}")}, stack: $stack"
+      s"Error during conversion of '$in' to $to${eOpt.fold("")(e => s" cause: ${e.getMessage}")}, stack: $stack."
     case GeneralError(message, cause, stack) =>
-      s"General decoder error: $message${cause.fold("")(e => s" with cause: ${e.getMessage}")}, stack: $stack"
+      s"General decoder error: $message${cause.fold("")(e => s" with cause: ${e.getMessage}")}, stack: $stack."
   }
 }
