@@ -12,8 +12,10 @@ class ScynamoCodecTest extends UnitTest {
       case class Foo(someString: String, someNumber: Int)
       val input = Foo("theString", 42)
 
-      val encoded = ObjectScynamoCodec[Foo].encode(input)
-      val result  = ObjectScynamoCodec[Foo].decode(encoded)
+      val result = for {
+        encoded <- ObjectScynamoCodec[Foo].encode(input)
+        decoded <- ObjectScynamoCodec[Foo].decode(encoded)
+      } yield decoded
 
       result should ===(Right(input))
     }
@@ -24,8 +26,10 @@ class ScynamoCodecTest extends UnitTest {
 
       val input = Foo("theString", 42, Bar(true))
 
-      val encoded = ObjectScynamoCodec[Foo].encode(input)
-      val result  = ObjectScynamoCodec[Foo].decode(encoded)
+      val result = for {
+        encoded <- ObjectScynamoCodec[Foo].encode(input)
+        decoded <- ObjectScynamoCodec[Foo].decode(encoded)
+      } yield decoded
 
       result should ===(Right(input))
     }
@@ -37,8 +41,10 @@ class ScynamoCodecTest extends UnitTest {
 
       val input: Foobar = Foo("theString")
 
-      val encoded = ObjectScynamoCodec[Foobar].encode(input)
-      val result  = ObjectScynamoCodec[Foobar].decode(encoded)
+      val result = for {
+        encoded <- ObjectScynamoCodec[Foobar].encode(input)
+        result  <- ObjectScynamoCodec[Foobar].decode(encoded)
+      } yield result
 
       result should ===(Right(input))
     }
@@ -56,8 +62,10 @@ class ScynamoCodecTest extends UnitTest {
       case class H(value: Int) extends Alphabet
 
       Inspectors.forAll(List[Alphabet](A, B, C, D, E, F, G, H(42))) { input =>
-        val encoded = ObjectScynamoCodec[Alphabet].encode(input)
-        val result  = ObjectScynamoCodec[Alphabet].decode(encoded)
+        val result = for {
+          encoded <- ObjectScynamoCodec[Alphabet].encode(input)
+          result  <- ObjectScynamoCodec[Alphabet].decode(encoded)
+        } yield result
 
         result should ===(Right(input))
       }
@@ -70,8 +78,10 @@ class ScynamoCodecTest extends UnitTest {
 
       val input: Foobar = Bar(Foo("some-string"))
 
-      val encoded = ObjectScynamoCodec[Foobar].encode(input)
-      val result  = ObjectScynamoCodec[Foobar].decode(encoded)
+      val result = for {
+        encoded <- ObjectScynamoCodec[Foobar].encode(input)
+        result  <- ObjectScynamoCodec[Foobar].decode(encoded)
+      } yield result
 
       result should ===(Right(input))
     }
@@ -94,7 +104,7 @@ class ScynamoCodecTest extends UnitTest {
 
       codec.encode(Bar) should ===("Bar".encoded)
 
-      codec.decode("Baz".encoded) should matchPattern {
+      "Baz".encoded.flatMap(codec.decode) should matchPattern {
         case Left(`error`) =>
       }
     }

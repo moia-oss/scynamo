@@ -3,19 +3,24 @@ package scynamo.generic
 import java.util
 import java.util.Collections
 
-import scynamo.ScynamoEncoder
+import cats.data.EitherNec
+import cats.instances.either._
+import cats.syntax.either._
+import cats.syntax.parallel._
+import scynamo.StackFrame.{Attr, Case}
+import scynamo.{ScynamoEncodeError, ScynamoEncoder}
 import shapeless._
 import shapeless.labelled._
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
 trait ShapelessScynamoEncoder[Base, A] {
-  def encodeMap(value: A): java.util.Map[String, AttributeValue]
+  def encodeMap(value: A): EitherNec[ScynamoEncodeError, java.util.Map[String, AttributeValue]]
 }
 
 object ShapelessScynamoEncoder extends EncoderHListInstances with EncoderCoproductInstances
 
 trait EncoderHListInstances {
-  implicit def deriveHNil[Base]: ShapelessScynamoEncoder[Base, HNil] = _ => Collections.emptyMap()
+  implicit def deriveHNil[Base]: ShapelessScynamoEncoder[Base, HNil] = _ => Right(Collections.emptyMap())
 
   implicit def deriveHCons[Base, K <: Symbol, V, T <: HList](
       implicit
@@ -27,17 +32,22 @@ trait EncoderHListInstances {
     value => {
       val fieldName = opts.transform(key.value.name)
 
-      val tail = st.value.encodeMap(value.tail)
+      val encodedHead = sv.value.encode(value.head).leftMap(x => x.map(_.push(Attr(fieldName))))
+      val encodedTail = st.value.encodeMap(value.tail)
 
-      val hm = new util.HashMap[String, AttributeValue]()
-      hm.putAll(tail)
-      hm.put(fieldName, sv.value.encode(value.head))
-      hm
+      (encodedHead, encodedTail).parMapN {
+        case (head, tail) =>
+          val hm = new util.HashMap[String, AttributeValue]()
+          hm.putAll(tail)
+          hm.put(fieldName, head)
+          hm
+      }
     }
 }
 
 trait EncoderCoproductInstances {
-  implicit def deriveCNil[Base]: ShapelessScynamoEncoder[Base, CNil] = _ => Collections.emptyMap()
+  implicit def deriveCNil[Base]: ShapelessScynamoEncoder[Base, CNil] =
+    _ => Either.leftNec(ScynamoEncodeError.generalError("Cannot encode CNil", None))
 
   implicit def deriveCCons[Base, K <: Symbol, V, T <: Coproduct](
       implicit
@@ -47,10 +57,13 @@ trait EncoderCoproductInstances {
       opts: ScynamoSealedTraitOpts[Base] = ScynamoSealedTraitOpts.default[Base]
   ): ShapelessScynamoEncoder[Base, FieldType[K, V] :+: T] = {
     case Inl(l) =>
-      val hm = new util.HashMap[String, AttributeValue]()
-      hm.putAll(sv.value.encode(l).m())
-      hm.put(opts.discriminator, AttributeValue.builder().s(opts.transform(key.value.name)).build())
-      hm
+      val name = opts.transform(key.value.name)
+      sv.value.encode(l).leftMap(x => x.map(_.push(Case(name)))).map(_.m()).map { vs =>
+        val hm = new util.HashMap[String, AttributeValue]()
+        hm.putAll(vs)
+        hm.put(opts.discriminator, AttributeValue.builder().s(name).build())
+        hm
+      }
     case Inr(r) => st.value.encodeMap(r)
   }
 }

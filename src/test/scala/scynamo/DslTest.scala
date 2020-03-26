@@ -17,7 +17,7 @@ class DslTest extends UnitTest {
 
       val result = "some-string".encoded
 
-      result.s should ===("some-string")
+      result.map(_.s) should ===(Right("some-string"))
     }
 
     "allow option access to fields in AttributeValue" in {
@@ -28,6 +28,16 @@ class DslTest extends UnitTest {
       val result = input.asOption(ScynamoType.Bool)
 
       result should ===(None)
+    }
+
+    "throw an exception with unsafe encoding" in {
+      import scynamo.syntax.encoder._
+
+      val input = List("foo", "", "bar")
+
+      an[IllegalArgumentException] should be thrownBy {
+        input.encodedUnsafe
+      }
     }
   }
 }

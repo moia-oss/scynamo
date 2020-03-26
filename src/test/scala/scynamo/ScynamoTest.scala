@@ -14,11 +14,15 @@ class ScynamoTest extends UnitTest {
       import scynamo.syntax.encoder._
       val input = Map("foo" -> "bar")
 
-      val response = GetItemResponse.builder().item(input.encodedMap).build()
+      val result = for {
+        encodedInput <- input.encodedMap
+        response = GetItemResponse.builder().item(encodedInput).build()
+        result <- Scynamo.decodeGetItemResponse[Map[String, String]](response)
+      } yield {
+        result
+      }
 
-      val result = Scynamo.decodeGetItemResponse[Map[String, String]](response)
-
-      result should ===(Some(Right(input)))
+      result should ===(Right(Some(input)))
     }
   }
 }

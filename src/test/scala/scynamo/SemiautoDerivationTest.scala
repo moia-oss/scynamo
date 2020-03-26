@@ -1,5 +1,6 @@
 package scynamo
 
+import cats.data.EitherNec
 import org.scalatest.{Inside, Inspectors}
 import scynamo.generic.{ScynamoDerivationOpts, ScynamoSealedTraitOpts}
 import scynamo.generic.semiauto._
@@ -21,11 +22,11 @@ class SemiautoDerivationTest extends UnitTest {
         val input = Foo("test")
 
         val encoded = ObjectScynamoCodec[Foo].encode(input)
-        val decoded = ObjectScynamoCodec[Foo].decode(encoded)
+        val decoded = encoded.flatMap(ObjectScynamoCodec[Foo].decode)
 
         decoded should ===(Right(input))
 
-        Inside.inside(encoded.decode[Map[String, AttributeValue]]) {
+        Inside.inside(encoded.flatMap(_.decode[Map[String, AttributeValue]])) {
           case Right(value) => value.keySet should contain("thisnamehasuppercaseletters")
         }
       }
@@ -45,10 +46,10 @@ class SemiautoDerivationTest extends UnitTest {
 
         Inspectors.forAll(List[Foobar](Foo, Bar)) { input =>
           val encoded = input.encodedMap
-          val decoded = encoded.decode[Foobar]
+          val decoded = encoded.flatMap(_.decode[Foobar])
 
           decoded should ===(Right(input))
-          Inside.inside(encoded.decode[Map[String, AttributeValue]]) {
+          Inside.inside(encoded.flatMap(_.decode[Map[String, AttributeValue]])) {
             case Right(encodedMap) =>
               Inside.inside(encodedMap.get(Foobar.sealedTraitOpts.discriminator).map(_.decode[String])) {
                 case Some(Right(tag)) => tag should be("FOO").or(be("BAR"))
@@ -65,7 +66,7 @@ class SemiautoDerivationTest extends UnitTest {
 
         val input = Foo("test")
 
-        val result = input.encoded.decode[Foo]
+        val result = input.encoded.flatMap(_.decode[Foo])
 
         result should ===(Right(input))
       }
@@ -79,9 +80,9 @@ class SemiautoDerivationTest extends UnitTest {
       }
 
       "decode values from a single string" in {
-        val input: AttributeValue = "Square".encoded
+        val input: EitherNec[ScynamoEncodeError, AttributeValue] = "Square".encoded
 
-        ScynamoDecoder[Shape].decode(input) should ===(Right(Shape.Square))
+        input.flatMap(ScynamoDecoder[Shape].decode) should ===(Right(Shape.Square))
       }
 
       "encode/decode from a single string" in {
@@ -89,7 +90,7 @@ class SemiautoDerivationTest extends UnitTest {
 
         val codec = ScynamoEnumCodec[Shape]
 
-        val result = codec.decode(codec.encode(input))
+        val result = codec.encode(input).flatMap(codec.decode)
 
         result should ===(Right(input))
       }
