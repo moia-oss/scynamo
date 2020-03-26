@@ -29,5 +29,15 @@ class DslTest extends UnitTest {
 
       result should ===(None)
     }
+
+    "throw an exception with unsafe encoding" in {
+      import scynamo.syntax.encoder._
+
+      val input = List("foo", "", "bar")
+
+      an[IllegalArgumentException] should be thrownBy {
+        input.encodedUnsafe
+      }
+    }
   }
 }
