@@ -34,11 +34,12 @@ object ErrorStack {
 
 sealed trait StackFrame extends Product with Serializable
 object StackFrame {
-  case class Attr(name: String)  extends StackFrame
-  case class Case(name: String)  extends StackFrame
-  case class Enum(name: String)  extends StackFrame
-  case class Index(value: Int)   extends StackFrame
-  case class MapKey[A](value: A) extends StackFrame
+  case class Attr(name: String)   extends StackFrame
+  case class Case(name: String)   extends StackFrame
+  case class Enum(name: String)   extends StackFrame
+  case class Index(value: Int)    extends StackFrame
+  case class MapKey[A](value: A)  extends StackFrame
+  case class Custom(name: String) extends StackFrame
 }
 
 trait ScynamoDecoder[A] extends ScynamoDecoderFunctions { self =>
@@ -131,7 +132,7 @@ trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with Scynam
               (keyDecoder.decode(key), valueDecoder.decode(value)).parMapN(_ -> _).leftMap(_.map(_.push(Index(i))))
           }
           .map(_.toMap)
-      }
+    }
 
   implicit val attributeValueDecoder: ScynamoDecoder[AttributeValue] = attributeValue => Right(attributeValue)
 }
@@ -154,7 +155,7 @@ trait ScynamoIterableDecoder extends LowestPrioAutoDecoder {
 
           elems.map(_.result())
         case None => Either.leftNec(ScynamoDecodeError.typeMismatch(ScynamoType.List, attributeValue))
-      }
+    }
 }
 
 trait LowestPrioAutoDecoder {
