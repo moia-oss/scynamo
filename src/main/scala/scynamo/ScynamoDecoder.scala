@@ -10,6 +10,7 @@ import cats.instances.vector._
 import cats.syntax.either._
 import cats.syntax.parallel._
 import cats.{Functor, SemigroupK}
+import scynamo.StackFrame.Index
 import scynamo.generic.auto.AutoDerivationUnlocked
 import scynamo.generic.{GenericScynamoDecoder, SemiautoDerivationDecoder}
 import shapeless.Lazy
@@ -33,9 +34,12 @@ object ErrorStack {
 
 sealed trait StackFrame extends Product with Serializable
 object StackFrame {
-  case class Attr(name: String) extends StackFrame
-  case class Case(name: String) extends StackFrame
-  case class Enum(name: String) extends StackFrame
+  case class Attr(name: String)   extends StackFrame
+  case class Case(name: String)   extends StackFrame
+  case class Enum(name: String)   extends StackFrame
+  case class Index(value: Int)    extends StackFrame
+  case class MapKey[A](value: A)  extends StackFrame
+  case class Custom(name: String) extends StackFrame
 }
 
 trait ScynamoDecoder[A] extends ScynamoDecoderFunctions { self =>
@@ -122,10 +126,10 @@ trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with Scynam
   ): ScynamoDecoder[Map[A, B]] =
     attributeValue =>
       attributeValue.asEither(ScynamoType.Map).flatMap { javaMap =>
-        javaMap.asScala.toVector
+        javaMap.asScala.toVector.zipWithIndex
           .parTraverse {
-            case (key, value) =>
-              (keyDecoder.decode(key), valueDecoder.decode(value)).parMapN(_ -> _)
+            case ((key, value), i) =>
+              (keyDecoder.decode(key), valueDecoder.decode(value)).parMapN(_ -> _).leftMap(_.map(_.push(Index(i))))
           }
           .map(_.toMap)
       }
@@ -141,10 +145,12 @@ trait ScynamoIterableDecoder extends LowestPrioAutoDecoder {
         case Some(theList) =>
           val builder = factory.newBuilder
           var elems   = Either.rightNec[ScynamoDecodeError, builder.type](builder)
+          var i       = 0
 
           theList.forEach { elem =>
-            val decoded = ScynamoDecoder[A].decode(elem)
+            val decoded = ScynamoDecoder[A].decode(elem).leftMap(_.map(_.push(Index(i))))
             elems = (elems, decoded).parMapN((builder, dec) => builder += dec)
+            i += 1
           }
 
           elems.map(_.result())

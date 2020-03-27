@@ -4,7 +4,7 @@ import cats.syntax.either._
 import cats.data.EitherNec
 import org.scalatest.Inside
 import scynamo.ScynamoEncoderTest.{Foo, Foo2}
-import scynamo.StackFrame.{Attr, Case}
+import scynamo.StackFrame.{Attr, Case, Index, MapKey}
 import scynamo.generic.auto._
 import scynamo.wrapper.{ScynamoBinarySet, ScynamoNumberSet, ScynamoStringSet}
 import software.amazon.awssdk.core.SdkBytes
@@ -52,6 +52,31 @@ class ScynamoEncoderTest extends UnitTest {
 
       Inside.inside(result) {
         case Left(errs) => errs.head.stack.frames should ===(List(Attr("level1"), Attr("level2"), Case("Level2Impl"), Attr("value")))
+      }
+    }
+
+    "provide a stack to error for lists" in {
+      import scynamo.syntax.encoder._
+
+      val input = List("foo", "", "bar")
+
+      val result = input.encoded
+
+      Inside.inside(result) {
+        case Left(es) => es.head.stack.frames should ===(List(Index(1)))
+      }
+    }
+
+    "provide a stack to error for maps" in {
+      import scynamo.syntax.encoder._
+
+      val keyName = "key-for-invalid-string"
+      val input   = Map(keyName -> "")
+
+      val result = input.encoded
+
+      Inside.inside(result) {
+        case Left(es) => es.head.stack.frames should ===(List(MapKey(keyName)))
       }
     }
 
