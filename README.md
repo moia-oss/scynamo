@@ -11,6 +11,10 @@ and is very similar to other libraries in the Scala ecosystem.
 - customize the derivation of case classes and sealed traits using options
 - `AttributeValue`-Syntax for null-safe accessors
 - provides optional syntax for encoding/decoding (see `scynamo.syntax.*`)
+- *safe*: Instead of silently encoding empty `String`s and
+  {String,Number,Binary} Sets, this operation *fails* in `scynamo`,
+  allowing you to catch the error before even reaching DynamoDB.  See
+  https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Limits.html.
 
 ## Documentation
 

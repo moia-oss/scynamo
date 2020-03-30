@@ -24,7 +24,7 @@ val user = User("42", "John", "Doe")
 
 3. Use it without any further imports:
 
-```scala
+```scala mdoc
 import scynamo._
 
 val result1 = for {
@@ -34,7 +34,7 @@ val result1 = for {
 ```
 
 4. (Optional) You can import some sugar, which changes the above example to:
-```scala
+```scala mdoc
 import scynamo._
 import scynamo.syntax.codec._
 import scynamo.generic.semiauto._
@@ -67,3 +67,51 @@ Important notes:
   `auto` derivation.
 
 ### Writing Encoders and Decoders
+
+#### Using methods on `ScynamoEncoder`/`ScynamoDecoder`
+
+#### From scratch
+
+If you are writing your own encoders/decoders from scratch, you have
+to be careful when accessing the `AttributeValue` from the AWS SDK or
+a `java.util.Map[String ,AttributeValue]`.
+
+To provide a null-safe way of accessing attributes, `scynamo` provides
+syntax that adds `asOption` and `asEither` methods that take an
+`ScynamoType` as input and perform a null-safe access to the
+corresponding field of the `AttributeValue`:
+
+```scala mdoc
+import scynamo._
+import scynamo.syntax.attributevalue._
+
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue
+
+val av: AttributeValue = AttributeValue.builder().build()
+
+val optionalString: Option[String] = av.asOption(ScynamoType.String)
+val eitherMap = av.asEither(ScynamoType.Map)
+```
+
+#### Don't break the `ErrorStack`
+
+Internally, `scynamo` uses the `ErrorStack` type to keep track of
+errors inside a nested structure.
+
+It's important that you always prefer the `par-` methods from
+https://typelevel.org/cats/typeclasses/parallel.html where possible.
+If you use `flatMap` (or `for-expressions`) you will short-circuit on
+the first error and not be able to see all of them at once.
+
+If you write an `ScynamoEncoder` or `ScynamoDecoder` that can/should
+provide error stack information, have a look at the built-in instances
+for, e.g., `List`, `Map` or even `ShapelessScynamoDecoder`.
+
+The `ErrorStack` supports different `StackFrame` types:
+
+- `Attr` used when accessing a named attribute
+- `Case` used when choosing an alternative of a sealed trait
+- `Enum` used for Enum-style encoding/decoding
+- `Index` used for indices into a list/vector/...
+- `MapKey` used when accessing keys of a `Map`
+- `Custom` allows users to provide custom information
