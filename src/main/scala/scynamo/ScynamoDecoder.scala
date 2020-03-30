@@ -141,20 +141,18 @@ trait ScynamoIterableDecoder extends LowestPrioAutoDecoder {
   import scynamo.syntax.attributevalue._
   def iterableDecoder[A: ScynamoDecoder, C[_] <: Iterable[A], X](implicit factory: Factory[A, C[A]]): ScynamoDecoder[C[A]] =
     attributeValue =>
-      attributeValue.asOption(ScynamoType.List) match {
-        case Some(theList) =>
-          val builder = factory.newBuilder
-          var elems   = Either.rightNec[ScynamoDecodeError, builder.type](builder)
-          var i       = 0
+      attributeValue.asEither(ScynamoType.List).flatMap { theList =>
+        val builder = factory.newBuilder
+        var elems   = Either.rightNec[ScynamoDecodeError, builder.type](builder)
+        var i       = 0
 
-          theList.forEach { elem =>
-            val decoded = ScynamoDecoder[A].decode(elem).leftMap(_.map(_.push(Index(i))))
-            elems = (elems, decoded).parMapN((builder, dec) => builder += dec)
-            i += 1
-          }
+        theList.forEach { elem =>
+          val decoded = ScynamoDecoder[A].decode(elem).leftMap(_.map(_.push(Index(i))))
+          elems = (elems, decoded).parMapN((builder, dec) => builder += dec)
+          i += 1
+        }
 
-          elems.map(_.result())
-        case None => Either.leftNec(ScynamoDecodeError.typeMismatch(ScynamoType.List, attributeValue))
+        elems.map(_.result())
       }
 }
 
@@ -179,10 +177,7 @@ trait ScynamoDecoderFunctions {
 trait ObjectScynamoDecoder[A] extends ScynamoDecoder[A] {
   import scynamo.syntax.attributevalue._
   override def decode(attributeValue: AttributeValue): EitherNec[ScynamoDecodeError, A] =
-    attributeValue.asOption(ScynamoType.Map) match {
-      case Some(value) => decodeMap(value)
-      case None        => Either.leftNec(ScynamoDecodeError.typeMismatch(ScynamoType.Map, attributeValue))
-    }
+    attributeValue.asEither(ScynamoType.Map).flatMap(decodeMap)
 
   def decodeMap(value: java.util.Map[String, AttributeValue]): EitherNec[ScynamoDecodeError, A]
 }
