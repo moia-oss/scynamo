@@ -70,6 +70,26 @@ Important notes:
 
 #### Using methods on `ScynamoEncoder`/`ScynamoDecoder`
 
+All encoder/decoder instances provide some helpful methods to create
+new instances.
+
+As an example you can modify the standard `String` encoder.decoder to *not*
+fail with empty strings:
+
+```scala mdoc
+import scynamo._
+
+val emptyStringEncoder: ScynamoEncoder[String] = ScynamoEncoder.stringEncoder.contramap[String] {
+  case "" => "some-magic-empty-string"
+  case s => s
+}
+
+val emptyStringDecoder: ScynamoDecoder[String] = ScynamoDecoder.stringDecoder.map {
+  case "some-magic-empty-string" => ""
+  case s => s
+}
+```
+
 #### From scratch
 
 If you are writing your own encoders/decoders from scratch, you have
