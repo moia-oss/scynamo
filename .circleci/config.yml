@@ -22,7 +22,7 @@ jobs:
       - run:
          name: Compile and Test
          command: |
-           sbt -batch "; scalafmtCheckAll; +test; +doc; version"
+           sbt -batch "; docs/mdoc; scalafmtCheckAll; +test; +doc; version"
       - save_cache:
           key: *dependencies_key
           paths:

@@ -1,4 +1,4 @@
-lazy val root = (project in file("."))
+lazy val root = project.in(file("."))
   .configs(IntegrationTest.extend(Test))
   .enablePlugins(
     GitVersioning,
@@ -7,7 +7,6 @@ lazy val root = (project in file("."))
   .settings(
     name := "scynamo",
     organization := "io.moia",
-    scalaVersion := "2.13.1",
     crossScalaVersions := List("2.13.1", "2.12.10"),
     scalacOptions ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
@@ -33,6 +32,18 @@ lazy val root = (project in file("."))
   )
   .settings(sbtGitSettings)
   .settings(scalaFmtSettings)
+
+lazy val docs = project.in(file("scynamo-docs"))
+  .dependsOn(root)
+  .enablePlugins(MdocPlugin)
+  .settings(Seq(
+    mdocVariables := Map(
+      "VERSION" -> version.value
+    ),
+    publish := {},
+    publishLocal := {},
+    publishArtifact := false
+  ))
 
 lazy val scalacOptions_2_12 = Seq(
   "-unchecked",
