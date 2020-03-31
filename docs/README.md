@@ -272,7 +272,7 @@ object Customer {
 
 val theCustomer: Customer = Customer(UUID.randomUUID(), "John", 42)
 
-val dynamoEndpoint = "http://127.0.0.1:4569"
+val dynamoEndpoint = "http://127.0.0.1:4569" // localstack
 val tableName      = "my-table"
 
 val client: DynamoDbAsyncClient = DynamoDbAsyncClient
