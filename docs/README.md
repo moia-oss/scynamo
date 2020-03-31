@@ -46,8 +46,8 @@ val result2 = for {
 ```
 
 You can also look at the [minimal
-example](https://github.com/moia-dev/scynamo/blob/docs/docs/README.md#test)
-below that uses the AWS SDK (v2) with `scynamo`.
+example](#minimal-example-using-the-aws-sdk) below that uses the AWS
+SDK (v2) with `scynamo`.
 
 ### Derivation of ScynamoCodec
 
