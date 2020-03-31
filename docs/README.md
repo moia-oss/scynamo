@@ -233,6 +233,19 @@ val result = Map(
 result: EitherNec[ScynamoEncodeError, java.util.Map[String, AttributeValue]]
 ```
 
+#### Formatting `ScynamoError`s with `Show`
+
+Every `ScynamoError` provides an instance of `Show` to format the
+error message in a more human friendly way:
+
+```scala mdoc
+ScynamoEncoder[String].encode("") match {
+  case Right(_) => ()
+  case Left(errors) =>
+    println("Errors: ${errors.map(_.show)}")
+}
+```
+
 ### Minimal Example using the AWS SDK
 
 ```scala mdoc
