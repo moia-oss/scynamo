@@ -73,6 +73,8 @@ Important notes:
 All encoder/decoder instances provide some helpful methods to create
 new instances.
 
+##### `contramap`/`map`/`imap`
+
 As an example you can modify the standard `String` encoder.decoder to *not*
 fail with empty strings:
 
@@ -87,6 +89,45 @@ val emptyStringEncoder: ScynamoEncoder[String] = ScynamoEncoder.stringEncoder.co
 val emptyStringDecoder: ScynamoDecoder[String] = ScynamoDecoder.stringDecoder.map {
   case "some-magic-empty-string" => ""
   case s => s
+}
+```
+
+Or you can use `imap` to do it directly on a `ScynamoCodec`:
+
+```scala mdoc
+val emptyStringCodec = ScynamoCodec.fromEncoderAndDecoder[String].imap[String]{
+  case "" => "some-magic-empty-string"
+  case s => s
+}{
+  case "some-magic-empty-string" => ""
+  case s => s
+}
+```
+
+##### `orElse`
+
+Use `orElse` to specify fallbacks:
+
+```scala mdoc
+val attributeValue = "some-string".encodedUnsafe // yolo
+
+// unsafe conversion via `toInt`, don't do this at home!
+val tolerantDecoder: ScynamoDecoder[Int] = ScynamoDecoder[Int].orElse(ScynamoDecoder[String].map(_.toInt))
+```
+
+##### `itransform`/`transform`
+
+There is also `ScynamoCodec.itransform`/`ScynamoDecoder#transform`
+which is very handy to chain additional validation:
+
+```scala mdoc
+import cats.syntax.either._
+
+// A decoder that only accepts the one answer
+ScynamoDecoder[Int].transform {
+  case Left(e) => Either.leftNec(ScynamoDecodeError.generalError(s"Not even a number! $e", None))
+  case Right(42) => Right(42)
+  case Right(i) => Either.leftNec(ScynamoDecodeError.generalError(s"Not the answer: $i", None))
 }
 ```
 
@@ -135,3 +176,35 @@ The `ErrorStack` supports different `StackFrame` types:
 - `Index` used for indices into a list/vector/...
 - `MapKey` used when accessing keys of a `Map`
 - `Custom` allows users to provide custom information
+
+### Background: cat's `Parallel`
+
+`scynamo` makes heave use of the `Parallel` typeclass provided by
+cats: https://typelevel.org/cats/typeclasses/parallel.html
+
+An `EitherNec[E, A]` is a regular `Either` that has a `NonEmptyChain`
+of `E`s on the left or a value of type `A` on the right side.
+
+Decoding/Encoding always gives you back an `EitherNec`, so you either
+get `>=1` errors or the result of the operation.
+
+It's important to always use the `par-` version of functions if they exist, for example:
+
+- `parTraverse` to decode multiple values in, e.g., `Vector`
+- `parMapN` to decode a tuple of individual elements
+
+NOTE: You can also use `flatMap` on `Either`, but that *will short
+circuit* and not give you all the errors (you get only the first
+instead of all).
+
+The most common imports you would need are:
+
+```
+// for `parTraverse` and `parMapN`
+import cats.syntax.parallel._
+import cats.instances.either._
+import cats.instances.list._ // or .vector._
+
+// for `Either.leftNec`
+import cats.syntax.either._
+```
