@@ -47,9 +47,9 @@ val result2 = for {
 
 ### Derivation of ScynamoCodec
 
-Scynamo provides both `semiauto` and `auto` derivation.  Note that
-mixing them is not a good idea and can lead to compile errors due to
-ambiguity of implicits.
+Scynamo provides both `semiauto` and `auto` derivation via
+`shapeless`.  Note that mixing them is not a good idea and can lead to
+compile errors due to ambiguity of implicits.
 
 To use them you need to import `scynamo.generic.semiauto._` or
 `scynamo.generic.auto._`, respectively.  There is a third alternative
@@ -207,4 +207,22 @@ import cats.instances.list._ // or .vector._
 
 // for `Either.leftNec`
 import cats.syntax.either._
+```
+
+### Useful tips
+
+`scynamo` provides a very handy `ScynamoEncoder` instance to make it
+easier for you to build `AttributeValue`s using the DSL:
+
+```scala mdoc
+import cats.data.EitherNec
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue
+
+val result = Map(
+ "attr1" -> "some-string".encoded,
+ "attr2" -> Some(42).encoded,
+ "attr3" -> List(4.0, 2.0).encoded
+).encodedMap
+
+result: EitherNec[ScynamoEncodeError, java.util.Map[String, AttributeValue]]
 ```
