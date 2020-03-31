@@ -91,6 +91,8 @@ trait DefaultScynamoEncoderInstances extends ScynamoIterableEncoder {
     case None        => Right(AttributeValue.builder().nul(true).build())
   }
 
+  implicit def someEncoder[A: ScynamoEncoder]: ScynamoEncoder[Some[A]] = x => ScynamoEncoder[A].encode(x.get)
+
   implicit val finiteDurationEncoder: ScynamoEncoder[FiniteDuration] = longEncoder.contramap(_.toNanos)
 
   implicit val durationEncoder: ScynamoEncoder[Duration] = longEncoder.contramap(_.toNanos)

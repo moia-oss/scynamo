@@ -5,7 +5,6 @@ import cats.data.EitherNec
 import org.scalatest.Inside
 import scynamo.ScynamoEncoderTest.{Foo, Foo2}
 import scynamo.StackFrame.{Attr, Case, Index, MapKey}
-import scynamo.generic.auto._
 import scynamo.wrapper.{ScynamoBinarySet, ScynamoNumberSet, ScynamoStringSet}
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
@@ -13,6 +12,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 class ScynamoEncoderTest extends UnitTest {
   "ScynamoEncoder" should {
     "support custom overrides using semiauto derivation" in {
+      import scynamo.generic.auto._
       val result = ObjectScynamoCodec[Foo].encode(Foo(42))
 
       result.map(_.m.get("i").s) should ===(Right(s"${Foo.prefix}42"))
@@ -32,7 +32,17 @@ class ScynamoEncoderTest extends UnitTest {
       result.map(_.n) should ===(Right("1"))
     }
 
+    "auto derivation does not kick-in for Some with DSL" in {
+      import scynamo.syntax.encoder._
+
+      val result = Some(1).encoded
+
+      result.map(_.n) should ===(Right("1"))
+    }
+
     "auto derivation works" in {
+      import scynamo.generic.auto._
+
       case class TestClass(someInteger: Int)
 
       val result = ScynamoEncoder[Option[TestClass]].encode(Some(TestClass(42)))
@@ -41,6 +51,8 @@ class ScynamoEncoderTest extends UnitTest {
     }
 
     "provide an error stack" in {
+      import scynamo.generic.auto._
+
       case class Root(level1: Level1)
       case class Level1(level2: Level2)
       sealed trait Level2
