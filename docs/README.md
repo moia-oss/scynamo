@@ -45,6 +45,10 @@ val result2 = for {
 } yield (encoded, decoded)
 ```
 
+You can also look at the [minimal
+example](https://github.com/moia-dev/scynamo/blob/docs/docs/README.md#test)
+below that uses the AWS SDK (v2) with `scynamo`.
+
 ### Derivation of ScynamoCodec
 
 Scynamo provides both `semiauto` and `auto` derivation via
@@ -211,6 +215,8 @@ import cats.syntax.either._
 
 ### Useful tips
 
+#### Building up `AttributeValue`s
+
 `scynamo` provides a very handy `ScynamoEncoder` instance to make it
 easier for you to build `AttributeValue`s using the DSL:
 
@@ -225,4 +231,61 @@ val result = Map(
 ).encodedMap
 
 result: EitherNec[ScynamoEncodeError, java.util.Map[String, AttributeValue]]
+```
+
+### Minimal Example using the AWS SDK
+
+```scala mdoc
+import java.net.URI
+import java.util.UUID
+import java.util.Collections
+
+import cats.data.EitherNec
+import scynamo.syntax.codec._
+import scynamo.{ObjectScynamoCodec, Scynamo, ScynamoDecodeError}
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
+import software.amazon.awssdk.services.dynamodb.model.{GetItemRequest, PutItemRequest, PutItemResponse}
+
+import scala.compat.java8.FutureConverters._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future // don't do this
+
+case class Customer(id: UUID, name: String, age: Int)
+
+object Customer {
+  implicit val customerCodec: ObjectScynamoCodec[Customer] = deriveScynamoCodec[Customer]
+}
+
+val theCustomer: Customer = Customer(UUID.randomUUID(), "John", 42)
+
+val dynamoEndpoint = "http://127.0.0.1:4569"
+val tableName      = "my-table"
+
+val client: DynamoDbAsyncClient = DynamoDbAsyncClient
+  .builder()
+  .endpointOverride(URI.create(dynamoEndpoint))
+  .region(Region.EU_CENTRAL_1)
+  .build()
+
+def writeToDynamo(): Future[PutItemResponse] = theCustomer.encodedMap match {
+  case Left(value) => Future.failed(new IllegalArgumentException(s"Failed to encode your customer: ${value.map(_.show)}"))
+  case Right(encodedItem) =>
+    client.putItem(PutItemRequest.builder().tableName(tableName).item(encodedItem).build()).toScala
+}
+
+def readFromDynamo(): Future[EitherNec[ScynamoDecodeError, Option[Customer]]] =
+  theCustomer.id.encoded match {
+    case Left(value) => Future.failed(new IllegalArgumentException(s"Customer id could not be encoded: ${value.map(_.show)}"))
+    case Right(customerId) =>
+      client
+        .getItem(GetItemRequest.builder().tableName(tableName).key(Collections.singletonMap("id", customerId)).build())
+        .toScala
+        .map(Scynamo.decodeGetItemResponse[Customer])
+  }
+
+for {
+  putItemResponse <- writeToDynamo()
+  decodedResponse <- readFromDynamo()
+} yield (putItemResponse, decodedResponse)
 ```

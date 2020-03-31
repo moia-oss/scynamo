@@ -27,7 +27,8 @@ lazy val root = project.in(file("."))
       "software.amazon.awssdk" % "dynamodb"                 % "2.10.91",
       "org.typelevel"          %% "cats-core"               % "2.1.1",
       "org.scalacheck"         %% "scalacheck"              % "1.14.3" % Test,
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.4"
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.4",
+      "org.scala-lang.modules" %% "scala-java8-compat" % "0.9.1"
     )
   )
   .settings(sbtGitSettings)
