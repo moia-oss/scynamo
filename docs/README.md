@@ -69,6 +69,9 @@ Important notes:
   Encoders/Decoders from the companion of your classes.  If you need
   that functionality, use `semiauto` derivation instead and avoid
   `auto` derivation.
+- to derive for a **sealed trait** there MUST be encoders/decoders for
+  **every subtype**, i.e., you need to add derived instances for each
+  of them.
 
 ### Writing Encoders and Decoders
 
