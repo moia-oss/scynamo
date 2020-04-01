@@ -73,6 +73,52 @@ Important notes:
   **every subtype**, i.e., you need to add derived instances for each
   of them.
 
+#### Customizing Derivation
+
+Scynamo allows you to customize some aspects of the `case class` and
+`sealed trait` derivation functionality.
+
+It provides:
+- `ScynamoDerivationOpts` for `case class` derivation
+- `ScynamoSealedTraitOpts` for `sealed trait` derivation
+
+An example use case would be to customize how fields are encoded:
+
+```scala mdoc
+import scynamo.generic.ScynamoDerivationOpts
+
+case class Dog(name: String, age: Int)
+object Dog {
+  implicit val scynamoDerivationOpts: ScynamoDerivationOpts[Dog] =
+  ScynamoDerivationOpts(s => s"dog-$s")
+
+  implicit val scynamoCodec: ObjectScynamoCodec[Dog] = deriveScynamoCodec[Dog]
+}
+
+val dogAttrValue = Map("dog-name" -> "Charlie".encoded, "dog-age" -> 3.encoded).encodedMapUnsafe
+
+ObjectScynamoDecoder[Dog].decodeMap(dogAttrValue) == Right(Dog("Charlie", 3))
+```
+
+#### The ScynamoEnumCodec
+
+Scynamo also has a `ScynamoEnum{Encoder,Decoder,Codec}`.  It can only
+be used with a `sealed trait` that consists ONLY of `case objects`.
+Then every `case object` is encoded directly as a `String`.
+
+Example:
+
+```scala mdoc
+sealed trait Color
+case object Red extends Color
+case object Green extends Color
+case object Blue extends Color
+
+implicit val colorCodec: ScynamoEnumCodec[Color] = deriveScynamoEnumCodec[Color]
+
+ScynamoEncoder[Color].encode(Blue) // AttributeValue with the String "Blue"
+```
+
 ### Writing Encoders and Decoders
 
 #### Using methods on `ScynamoEncoder`/`ScynamoDecoder`
