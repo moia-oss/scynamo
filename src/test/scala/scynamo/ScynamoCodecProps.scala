@@ -109,7 +109,7 @@ class ScynamoCodecProps extends Properties("ScynamoCodec") {
     Gen.nonEmptyListOf(bigIntGen).map(_.toSet).map(ScynamoNumberSet(_))
   ) { value: ScynamoNumberSet[BigInt] => decodeAfterEncodeIsIdentity(value) }
 
-  propertyWithSeed("decode.encode === id (number set, bigecimal)", propertySeed) = Prop.forAll(
+  propertyWithSeed("decode.encode === id (number set, bigdecimal)", propertySeed) = Prop.forAll(
     Gen.nonEmptyListOf(bigDecimalGen).map(_.toSet).map(ScynamoNumberSet(_))
   ) { value: ScynamoNumberSet[BigDecimal] => decodeAfterEncodeIsIdentity(value) }
 
