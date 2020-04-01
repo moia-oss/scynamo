@@ -1,3 +1,4 @@
+
 lazy val root = project.in(file("."))
   .configs(IntegrationTest.extend(Test))
   .enablePlugins(
@@ -16,11 +17,9 @@ lazy val root = project.in(file("."))
       }
     },
     scalafmtOnCompile := true,
-    credentials ++= Seq(Path.userHome / ".ivy2" / ".credentials").filter(_.exists).map(Credentials(_)),
-    credentials ++= Seq("ARTIFACTORY_USER")
-      .filter(sys.env.isDefinedAt)
-      .map(user => Credentials("Artifactory Realm", "moiadev.jfrog.io", sys.env(user), sys.env("ARTIFACTORY_APIKEY"))),
-    publishTo := Some("Artifactory Realm".at("https://moiadev.jfrog.io/moiadev/sbt-release-local/")),
+    licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0")),
+    scmInfo := Some(ScmInfo(url("https://github.com/moia-dev/scynamo"), "scm:git@github.com:moia-dev/scynamo.git")),
+    homepage := Some(url("https://github.com/moia-dev/scynamo")),
     libraryDependencies ++= Seq(
       "org.scalatest"          %% "scalatest"               % "3.1.1" % Test,
       "com.chuusai"            %% "shapeless"               % "2.3.3",
@@ -33,6 +32,7 @@ lazy val root = project.in(file("."))
   )
   .settings(sbtGitSettings)
   .settings(scalaFmtSettings)
+  .settings(sonatypeSettings)
 
 lazy val docs = project.in(file("scynamo-docs"))
   .dependsOn(root)
@@ -96,3 +96,14 @@ lazy val scalaFmtSettings =
   Seq(
     scalafmtOnCompile := true
   ) ++ inConfig(IntegrationTest.extend(Test))(org.scalafmt.sbt.ScalafmtPlugin.scalafmtConfigSettings)
+
+lazy val sonatypeSettings = {
+  import xerial.sbt.Sonatype._
+  Seq(
+    publishTo := sonatypePublishTo.value,
+    sonatypeProfileName := organization.value,
+    publishMavenStyle := true,
+    sonatypeProjectHosting := Some(GitHubHosting("moia-dev", "scynamo", "oss-support@moia.io")),
+    credentials += Credentials(Path.userHome / ".sbt" / "sonatype_credential")
+  )
+}
