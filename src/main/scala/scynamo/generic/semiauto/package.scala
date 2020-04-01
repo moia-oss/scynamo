@@ -12,8 +12,8 @@ trait SemiautoDerivationEncoder {
       implicit genericEncoder: Lazy[GenericScynamoEncoder[A]]
   ): ObjectScynamoEncoder[A] = genericEncoder.value
 
-  def deriveScynamoEnumEncoder[A](implicit genericEnumEncoder: Lazy[GenericScynamoEnumEncoder[A]]): ScynamoEncoder[A] =
-    genericEnumEncoder.value
+  def deriveScynamoEnumEncoder[A](implicit genericEnumEncoder: GenericScynamoEnumEncoder[A]): ScynamoEncoder[A] =
+    genericEnumEncoder
 
 }
 
@@ -22,16 +22,16 @@ trait SemiautoDerivationDecoder {
       implicit genericDecoder: Lazy[GenericScynamoDecoder[A]]
   ): ObjectScynamoDecoder[A] = genericDecoder.value
 
-  def deriveScynamoEnumDecoder[A](implicit genericEnumDecoder: Lazy[GenericScynamoEnumDecoder[A]]): ScynamoDecoder[A] =
-    genericEnumDecoder.value
+  def deriveScynamoEnumDecoder[A](implicit genericEnumDecoder: GenericScynamoEnumDecoder[A]): ScynamoDecoder[A] =
+    genericEnumDecoder
 }
 
 trait SemiautoDerivationCodec {
   def deriveScynamoCodec[A](
       implicit
-      genericEncoder: GenericScynamoEncoder[A],
-      genericDecoder: GenericScynamoDecoder[A]
-  ): ObjectScynamoCodec[A] = ObjectScynamoCodec.fromEncoderAndDecoder(genericEncoder, genericDecoder)
+      genericEncoder: Lazy[GenericScynamoEncoder[A]],
+      genericDecoder: Lazy[GenericScynamoDecoder[A]]
+  ): ObjectScynamoCodec[A] = ObjectScynamoCodec.fromEncoderAndDecoder(genericEncoder.value, genericDecoder.value)
 
   def deriveScynamoEnumCodec[A](
       implicit genericEncoder: GenericScynamoEnumEncoder[A],

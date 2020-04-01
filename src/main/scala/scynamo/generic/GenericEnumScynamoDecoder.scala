@@ -15,8 +15,8 @@ object GenericScynamoEnumDecoder extends GenericScynamoEnumDecoderInstances
 trait GenericScynamoEnumDecoderInstances {
   implicit def derivedEnumDecoderInstance[F, G](
       implicit gen: LabelledGeneric.Aux[F, G],
-      sg: Lazy[ShapelessScynamoEnumDecoder[G]]
-  ): GenericScynamoEnumDecoder[F] = attributeValue => sg.value.decode(attributeValue).map(gen.from)
+      sg: ShapelessScynamoEnumDecoder[G]
+  ): GenericScynamoEnumDecoder[F] = attributeValue => sg.decode(attributeValue).map(gen.from)
 }
 
 trait ShapelessScynamoEnumDecoder[A] {
@@ -33,12 +33,12 @@ trait EnumDecoderCoproductInstances {
       implicit
       key: Witness.Aux[K],
       sv: LabelledGeneric.Aux[V, HNil],
-      st: Lazy[ShapelessScynamoEnumDecoder[T]]
+      st: ShapelessScynamoEnumDecoder[T]
   ): ShapelessScynamoEnumDecoder[FieldType[K, V] :+: T] = attributeValue => {
     if (attributeValue.asOption(ScynamoType.String).contains(key.value.name)) {
       Right(Inl(field[K](sv.from(HNil))))
     } else {
-      st.value.decode(attributeValue).map(Inr(_)).leftMap(_.map(_.push(Enum(key.value.name))))
+      st.decode(attributeValue).map(Inr(_)).leftMap(_.map(_.push(Enum(key.value.name))))
     }
   }
 }

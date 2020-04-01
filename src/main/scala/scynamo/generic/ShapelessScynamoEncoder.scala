@@ -26,14 +26,14 @@ trait EncoderHListInstances {
       implicit
       key: Witness.Aux[K],
       sv: Lazy[ScynamoEncoder[V]],
-      st: Lazy[ShapelessScynamoEncoder[Base, T]],
+      st: ShapelessScynamoEncoder[Base, T],
       opts: ScynamoDerivationOpts[Base] = ScynamoDerivationOpts.default[Base]
   ): ShapelessScynamoEncoder[Base, FieldType[K, V] :: T] =
     value => {
       val fieldName = opts.transform(key.value.name)
 
       val encodedHead = sv.value.encode(value.head).leftMap(x => x.map(_.push(Attr(fieldName))))
-      val encodedTail = st.value.encodeMap(value.tail)
+      val encodedTail = st.encodeMap(value.tail)
 
       (encodedHead, encodedTail).parMapN {
         case (head, tail) =>
@@ -53,7 +53,7 @@ trait EncoderCoproductInstances {
       implicit
       key: Witness.Aux[K],
       sv: Lazy[ScynamoEncoder[V]],
-      st: Lazy[ShapelessScynamoEncoder[Base, T]],
+      st: ShapelessScynamoEncoder[Base, T],
       opts: ScynamoSealedTraitOpts[Base] = ScynamoSealedTraitOpts.default[Base]
   ): ShapelessScynamoEncoder[Base, FieldType[K, V] :+: T] = {
     case Inl(l) =>
@@ -64,6 +64,6 @@ trait EncoderCoproductInstances {
         hm.put(opts.discriminator, AttributeValue.builder().s(name).build())
         hm
       }
-    case Inr(r) => st.value.encodeMap(r)
+    case Inr(r) => st.encodeMap(r)
   }
 }

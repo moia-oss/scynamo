@@ -23,7 +23,7 @@ trait DecoderHListInstances extends ScynamoDecoderFunctions {
       implicit
       key: Witness.Aux[K],
       sv: Lazy[ScynamoDecoder[V]],
-      st: Lazy[ShapelessScynamoDecoder[Base, T]],
+      st: ShapelessScynamoDecoder[Base, T],
       opts: ScynamoDerivationOpts[Base] = ScynamoDerivationOpts.default[Base]
   ): ShapelessScynamoDecoder[Base, FieldType[K, V] :: T] =
     value => {
@@ -36,7 +36,7 @@ trait DecoderHListInstances extends ScynamoDecoderFunctions {
         case (None, None)          => Either.leftNec(ScynamoDecodeError.missingField(fieldName, value))
       }
 
-      (decodedHead.map(field[K](_)), st.value.decodeMap(value)).mapN(_ :: _)
+      (decodedHead.map(field[K](_)), st.decodeMap(value)).mapN(_ :: _)
     }
 }
 
@@ -50,14 +50,14 @@ trait DecoderCoproductInstances extends ScynamoDecoderFunctions {
       implicit
       key: Witness.Aux[K],
       sv: Lazy[ScynamoDecoder[V]],
-      st: Lazy[ShapelessScynamoDecoder[Base, T]],
+      st: ShapelessScynamoDecoder[Base, T],
       opts: ScynamoSealedTraitOpts[Base] = ScynamoSealedTraitOpts.default[Base]
   ): ShapelessScynamoDecoder[Base, FieldType[K, V] :+: T] =
     value => {
       if (value.containsKey(opts.discriminator)) {
-        deriveCConsTagged.decodeMap(value)
+        deriveCConsTagged[Base, K, V, T].decodeMap(value)
       } else {
-        deriveCConsNested.decodeMap(value)
+        deriveCConsNested[Base, K, V, T].decodeMap(value)
       }
     }
 
@@ -65,7 +65,7 @@ trait DecoderCoproductInstances extends ScynamoDecoderFunctions {
       implicit
       key: Witness.Aux[K],
       sv: Lazy[ScynamoDecoder[V]],
-      st: Lazy[ShapelessScynamoDecoder[Base, T]],
+      st: ShapelessScynamoDecoder[Base, T],
       opts: ScynamoSealedTraitOpts[Base]
   ): ShapelessScynamoDecoder[Base, FieldType[K, V] :+: T] =
     value => {
@@ -78,7 +78,7 @@ trait DecoderCoproductInstances extends ScynamoDecoderFunctions {
         result <- if (name == typeTag) {
           sv.value.decode(AttributeValue.builder().m(value).build()).map(v => Inl(field[K](v))).leftMap(_.map(_.push(Case(name))))
         } else {
-          st.value.decodeMap(value).map(Inr(_))
+          st.decodeMap(value).map(Inr(_))
         }
       } yield result
     }
@@ -87,14 +87,14 @@ trait DecoderCoproductInstances extends ScynamoDecoderFunctions {
       implicit
       key: Witness.Aux[K],
       sv: Lazy[ScynamoDecoder[V]],
-      st: Lazy[ShapelessScynamoDecoder[Base, T]],
+      st: ShapelessScynamoDecoder[Base, T],
       opts: ScynamoSealedTraitOpts[Base]
   ): ShapelessScynamoDecoder[Base, FieldType[K, V] :+: T] =
     value => {
       val name = opts.transform(key.value.name)
       Option(value.get(name)) match {
         case Some(nestedValue) => sv.value.decode(nestedValue).map(v => Inl(field[K](v))).leftMap(_.map(_.push(Case(name))))
-        case _                 => st.value.decodeMap(value).map(Inr(_))
+        case _                 => st.decodeMap(value).map(Inr(_))
       }
     }
 
