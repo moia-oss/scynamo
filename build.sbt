@@ -103,7 +103,7 @@ lazy val sonatypeSettings = {
     publishTo := sonatypePublishTo.value,
     sonatypeProfileName := organization.value,
     publishMavenStyle := true,
-    sonatypeProjectHosting := Some(GitHubHosting("moia-dev", "scala-http-client", "oss-support@moia.io")),
+    sonatypeProjectHosting := Some(GitHubHosting("moia-dev", "scynamo", "oss-support@moia.io")),
     credentials += Credentials(Path.userHome / ".sbt" / "sonatype_credential")
   )
 }
