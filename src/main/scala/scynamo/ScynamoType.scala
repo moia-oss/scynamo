@@ -7,8 +7,6 @@ sealed abstract class ScynamoType {
   type Result
 }
 
-object TypeTest extends App
-
 object ScynamoType {
   sealed trait TypeInvalidIfEmpty
   type Aux[A] = ScynamoType { type Result = A }

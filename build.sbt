@@ -1,4 +1,4 @@
-lazy val root = (project in file("."))
+lazy val root = project.in(file("."))
   .configs(IntegrationTest.extend(Test))
   .enablePlugins(
     GitVersioning,
@@ -7,7 +7,6 @@ lazy val root = (project in file("."))
   .settings(
     name := "scynamo",
     organization := "io.moia",
-    scalaVersion := "2.13.1",
     crossScalaVersions := List("2.13.1", "2.12.10"),
     scalacOptions ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
@@ -28,11 +27,24 @@ lazy val root = (project in file("."))
       "software.amazon.awssdk" % "dynamodb"                 % "2.10.91",
       "org.typelevel"          %% "cats-core"               % "2.1.1",
       "org.scalacheck"         %% "scalacheck"              % "1.14.3" % Test,
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.4"
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.4",
+      "org.scala-lang.modules" %% "scala-java8-compat" % "0.9.1"
     )
   )
   .settings(sbtGitSettings)
   .settings(scalaFmtSettings)
+
+lazy val docs = project.in(file("scynamo-docs"))
+  .dependsOn(root)
+  .enablePlugins(MdocPlugin)
+  .settings(Seq(
+    mdocVariables := Map(
+      "VERSION" -> version.value
+    ),
+    publish := {},
+    publishLocal := {},
+    publishArtifact := false
+  ))
 
 lazy val scalacOptions_2_12 = Seq(
   "-unchecked",
