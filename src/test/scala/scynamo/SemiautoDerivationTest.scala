@@ -2,6 +2,7 @@ package scynamo
 
 import cats.data.EitherNec
 import org.scalatest.{Inside, Inspectors}
+import scynamo.Mixed.{CaseClass, CaseObject}
 import scynamo.generic.{ScynamoDerivationOpts, ScynamoSealedTraitOpts}
 import scynamo.generic.semiauto._
 import scynamo.syntax.all._
@@ -70,6 +71,18 @@ class SemiautoDerivationTest extends UnitTest {
 
         result should ===(Right(input))
       }
+
+      "work if the sealed trait contains case classes and case objects" in {
+        import scynamo.syntax.encoder._
+
+        implicit val codec: ObjectScynamoCodec[Mixed] = deriveScynamoCodec[Mixed]
+
+        val result = List[Mixed](CaseObject, CaseClass(42)).encoded
+
+        Inside.inside(result) {
+          case Right(av) => av.l.size should ===(2)
+        }
+      }
     }
 
     "deriving for an enum" should {
@@ -94,6 +107,12 @@ class SemiautoDerivationTest extends UnitTest {
 
         result should ===(Right(input))
       }
+
+      "fail if the trait contains non case-objects" in {
+        """
+          |deriveScynamoEnumCodec[Mixed]
+          |""".stripMargin shouldNot compile
+      }
     }
   }
 
@@ -105,5 +124,15 @@ class SemiautoDerivationTest extends UnitTest {
 
     implicit val encoder: ScynamoEncoder[Shape] = deriveScynamoEnumEncoder[Shape]
     implicit val decoder: ScynamoDecoder[Shape] = deriveScynamoEnumDecoder[Shape]
+  }
+}
+
+sealed trait Mixed
+object Mixed {
+  implicit val caseObjectCodec: ObjectScynamoCodec[CaseObject.type] = deriveScynamoCodec[CaseObject.type]
+  case object CaseObject           extends Mixed
+  case class CaseClass(value: Int) extends Mixed
+  object CaseClass {
+    implicit val caseClassCodec: ObjectScynamoCodec[CaseClass] = deriveScynamoCodec[CaseClass]
   }
 }
