@@ -13,8 +13,8 @@ object GenericScynamoEnumEncoder extends GenericScynamoEnumEncoderInstances
 trait GenericScynamoEnumEncoderInstances {
   implicit def derivedEnumEncoderInstance[F, G](
       implicit gen: LabelledGeneric.Aux[F, G],
-      sg: Lazy[ShapelessScynamoEnumEncoder[G]]
-  ): GenericScynamoEnumEncoder[F] = value => sg.value.encode(gen.to(value))
+      sg: ShapelessScynamoEnumEncoder[G]
+  ): GenericScynamoEnumEncoder[F] = value => sg.encode(gen.to(value))
 }
 
 trait ShapelessScynamoEnumEncoder[A] {
@@ -29,9 +29,9 @@ trait EnumEncoderCoproductInstances {
   implicit def deriveCCons[K <: Symbol, V, T <: Coproduct](
       implicit
       key: Witness.Aux[K],
-      st: Lazy[ShapelessScynamoEnumEncoder[T]]
+      st: ShapelessScynamoEnumEncoder[T]
   ): ShapelessScynamoEnumEncoder[FieldType[K, V] :+: T] = {
     case Inl(_)    => Right(AttributeValue.builder().s(key.value.name).build())
-    case Inr(tail) => st.value.encode(tail)
+    case Inr(tail) => st.encode(tail)
   }
 }
