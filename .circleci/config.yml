@@ -31,42 +31,11 @@ jobs:
             - ~/.sbt
             - ~/.cache/coursier/
 
-  publishRelease:
-    docker:
-      - image: *sbt_image
-    steps:
-      - checkout
-      - *restore_dependencies
-      - run:
-          name: Publish
-          command: |
-            sbt -batch "; version; +publish"
-      - save_cache:
-          key: *dependencies_key
-          paths:
-            - ~/.m2
-            - ~/.ivy2
-            - ~/.sbt
-            - ~/.cache/coursier/
-
 workflows:
   version: 2
   testDevelopmentBranch:
     jobs:
       - test:
-          context: sbt-release-ci-library
           filters:
-            branches:
-              ignore:
-                - master
             tags:
               ignore: /.*/
-
-  publishRelease:
-    jobs:
-      - publishRelease:
-          context: sbt-release-ci-library
-          filters:
-            branches:
-              only:
-                - master
