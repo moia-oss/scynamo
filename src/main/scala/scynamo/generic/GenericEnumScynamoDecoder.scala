@@ -13,8 +13,8 @@ trait GenericScynamoEnumDecoder[A] extends ScynamoDecoder[A]
 object GenericScynamoEnumDecoder extends GenericScynamoEnumDecoderInstances
 
 trait GenericScynamoEnumDecoderInstances {
-  implicit def derivedEnumDecoderInstance[F, G](
-      implicit gen: LabelledGeneric.Aux[F, G],
+  implicit def derivedEnumDecoderInstance[F, G](implicit
+      gen: LabelledGeneric.Aux[F, G],
       sg: ShapelessScynamoEnumDecoder[G]
   ): GenericScynamoEnumDecoder[F] = attributeValue => sg.decode(attributeValue).map(gen.from)
 }
@@ -29,16 +29,15 @@ trait EnumDecoderCoproductInstances {
   import scynamo.syntax.attributevalue._
   implicit val deriveCNil: ShapelessScynamoEnumDecoder[CNil] = value => Either.leftNec(ScynamoDecodeError.invalidCoproductCaseAttr(value))
 
-  implicit def deriveCCons[K <: Symbol, V, T <: Coproduct](
-      implicit
+  implicit def deriveCCons[K <: Symbol, V, T <: Coproduct](implicit
       key: Witness.Aux[K],
       sv: LabelledGeneric.Aux[V, HNil],
       st: ShapelessScynamoEnumDecoder[T]
-  ): ShapelessScynamoEnumDecoder[FieldType[K, V] :+: T] = attributeValue => {
-    if (attributeValue.asOption(ScynamoType.String).contains(key.value.name)) {
-      Right(Inl(field[K](sv.from(HNil))))
-    } else {
-      st.decode(attributeValue).map(Inr(_)).leftMap(_.map(_.push(Enum(key.value.name))))
+  ): ShapelessScynamoEnumDecoder[FieldType[K, V] :+: T] =
+    attributeValue => {
+      if (attributeValue.asOption(ScynamoType.String).contains(key.value.name))
+        Right(Inl(field[K](sv.from(HNil))))
+      else
+        st.decode(attributeValue).map(Inr(_)).leftMap(_.map(_.push(Enum(key.value.name))))
     }
-  }
 }

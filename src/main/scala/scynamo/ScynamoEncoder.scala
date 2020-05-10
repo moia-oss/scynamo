@@ -30,19 +30,17 @@ object ScynamoEncoder extends DefaultScynamoEncoderInstances {
 
 trait DefaultScynamoEncoderInstances extends ScynamoIterableEncoder {
   implicit val stringEncoder: ScynamoEncoder[String] = value => {
-    if (value.nonEmpty) {
+    if (value.nonEmpty)
       Right(AttributeValue.builder().s(value).build())
-    } else {
+    else
       Either.leftNec(ScynamoEncodeError.invalidEmptyValue(ScynamoType.String))
-    }
   }
 
   private[this] val numberStringEncoder: ScynamoEncoder[String] = value => {
-    if (value.nonEmpty) {
+    if (value.nonEmpty)
       Right(AttributeValue.builder().n(value).build())
-    } else {
+    else
       Either.leftNec(ScynamoEncodeError.invalidEmptyValue(ScynamoType.String))
-    }
   }
 
   implicit val intEncoder: ScynamoEncoder[Int] = numberStringEncoder.contramap[Int](_.toString)
@@ -116,7 +114,7 @@ trait DefaultScynamoEncoderInstances extends ScynamoIterableEncoder {
   implicit val attributeValueEncoder: ScynamoEncoder[AttributeValue] = { value =>
     import scynamo.syntax.attributevalue._
 
-    val nonEmptyString    = value.asOption(ScynamoType.String).map(x => ScynamoType.String       -> x.nonEmpty)
+    val nonEmptyString    = value.asOption(ScynamoType.String).map(x => ScynamoType.String -> x.nonEmpty)
     val nonEmptyStringSet = value.asOption(ScynamoType.StringSet).map(x => ScynamoType.StringSet -> (x.size() > 0))
     val nonEmptyNumberSet = value.asOption(ScynamoType.NumberSet).map(x => ScynamoType.NumberSet -> (x.size() > 0))
     val nonEmptyBinarySet = value.asOption(ScynamoType.BinarySet).map(x => ScynamoType.BinarySet -> (x.size() > 0))
@@ -140,8 +138,8 @@ trait ScynamoIterableEncoder extends LowestPrioAutoEncoder {
 }
 
 trait LowestPrioAutoEncoder {
-  final implicit def autoDerivedScynamoEncoder[A: AutoDerivationUnlocked](
-      implicit genericEncoder: Lazy[GenericScynamoEncoder[A]]
+  final implicit def autoDerivedScynamoEncoder[A: AutoDerivationUnlocked](implicit
+      genericEncoder: Lazy[GenericScynamoEncoder[A]]
   ): ObjectScynamoEncoder[A] =
     scynamo.generic.semiauto.deriveScynamoEncoder[A]
 }
@@ -180,11 +178,10 @@ object ScynamoKeyEncoder {
   def apply[A](implicit encoder: ScynamoKeyEncoder[A]): ScynamoKeyEncoder[A] = encoder
 
   implicit val stringKeyEncoder: ScynamoKeyEncoder[String] = value =>
-    if (value.nonEmpty) {
+    if (value.nonEmpty)
       Right(value)
-    } else {
+    else
       Either.leftNec(ScynamoEncodeError.invalidEmptyValue(ScynamoType.String))
-    }
 
   implicit val uuidKeyEncoder: ScynamoKeyEncoder[UUID] = ScynamoKeyEncoder[String].contramap[UUID](_.toString)
 }

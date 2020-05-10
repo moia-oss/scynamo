@@ -11,8 +11,8 @@ trait GenericScynamoEnumEncoder[A] extends ScynamoEncoder[A]
 object GenericScynamoEnumEncoder extends GenericScynamoEnumEncoderInstances
 
 trait GenericScynamoEnumEncoderInstances {
-  implicit def derivedEnumEncoderInstance[F, G](
-      implicit gen: LabelledGeneric.Aux[F, G],
+  implicit def derivedEnumEncoderInstance[F, G](implicit
+      gen: LabelledGeneric.Aux[F, G],
       sg: ShapelessScynamoEnumEncoder[G]
   ): GenericScynamoEnumEncoder[F] = value => sg.encode(gen.to(value))
 }
@@ -26,8 +26,7 @@ object ShapelessScynamoEnumEncoder extends EnumEncoderCoproductInstances
 trait EnumEncoderCoproductInstances {
   implicit val deriveCNil: ShapelessScynamoEnumEncoder[CNil] = _ => throw new NotImplementedError(s"Encoding CNil as Enum is not possible!")
 
-  implicit def deriveCCons[K <: Symbol, V, T <: Coproduct](
-      implicit
+  implicit def deriveCCons[K <: Symbol, V, T <: Coproduct](implicit
       key: Witness.Aux[K],
       st: ShapelessScynamoEnumEncoder[T]
   ): ShapelessScynamoEnumEncoder[FieldType[K, V] :+: T] = {

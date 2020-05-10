@@ -22,8 +22,7 @@ object ShapelessScynamoEncoder extends EncoderHListInstances with EncoderCoprodu
 trait EncoderHListInstances {
   implicit def deriveHNil[Base]: ShapelessScynamoEncoder[Base, HNil] = _ => Right(Collections.emptyMap())
 
-  implicit def deriveHCons[Base, K <: Symbol, V, T <: HList](
-      implicit
+  implicit def deriveHCons[Base, K <: Symbol, V, T <: HList](implicit
       key: Witness.Aux[K],
       sv: Lazy[ScynamoEncoder[V]],
       st: ShapelessScynamoEncoder[Base, T],
@@ -49,8 +48,7 @@ trait EncoderCoproductInstances {
   implicit def deriveCNil[Base]: ShapelessScynamoEncoder[Base, CNil] =
     _ => Either.leftNec(ScynamoEncodeError.generalError("Cannot encode CNil", None))
 
-  implicit def deriveCCons[Base, K <: Symbol, V, T <: Coproduct](
-      implicit
+  implicit def deriveCCons[Base, K <: Symbol, V, T <: Coproduct](implicit
       key: Witness.Aux[K],
       sv: Lazy[ScynamoEncoder[V]],
       st: ShapelessScynamoEncoder[Base, T],
