@@ -106,12 +106,13 @@ trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with Scynam
 
   implicit def setDecoder[A: ScynamoDecoder]: ScynamoDecoder[Set[A]] = iterableDecoder
 
-  implicit def optionDecoder[A: ScynamoDecoder]: ScynamoDecoder[Option[A]] = new ScynamoDecoder[Option[A]] {
-    override def decode(attributeValue: AttributeValue): EitherNec[ScynamoDecodeError, Option[A]] =
-      if (attributeValue.nul()) Right(None) else ScynamoDecoder[A].decode(attributeValue).map(Some(_))
+  implicit def optionDecoder[A: ScynamoDecoder]: ScynamoDecoder[Option[A]] =
+    new ScynamoDecoder[Option[A]] {
+      override def decode(attributeValue: AttributeValue): EitherNec[ScynamoDecodeError, Option[A]] =
+        if (attributeValue.nul()) Right(None) else ScynamoDecoder[A].decode(attributeValue).map(Some(_))
 
-    override def defaultValue: Option[Option[A]] = Some(None)
-  }
+      override def defaultValue: Option[Option[A]] = Some(None)
+    }
 
   implicit val finiteDurationDecoder: ScynamoDecoder[FiniteDuration] = longDecoder.map(Duration.fromNanos)
 
@@ -120,8 +121,8 @@ trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with Scynam
   implicit val uuidDecoder: ScynamoDecoder[UUID] = attributeValue =>
     attributeValue.asEither(ScynamoType.String).flatMap(s => convert(s, "UUID")(UUID.fromString))
 
-  implicit def mapDecoder[A, B](
-      implicit keyDecoder: ScynamoKeyDecoder[A],
+  implicit def mapDecoder[A, B](implicit
+      keyDecoder: ScynamoKeyDecoder[A],
       valueDecoder: ScynamoDecoder[B]
   ): ScynamoDecoder[Map[A, B]] =
     attributeValue =>
@@ -157,8 +158,8 @@ trait ScynamoIterableDecoder extends LowestPrioAutoDecoder {
 }
 
 trait LowestPrioAutoDecoder {
-  final implicit def autoDerivedScynamoDecoder[A: AutoDerivationUnlocked](
-      implicit genericDecoder: Lazy[GenericScynamoDecoder[A]]
+  final implicit def autoDerivedScynamoDecoder[A: AutoDerivationUnlocked](implicit
+      genericDecoder: Lazy[GenericScynamoDecoder[A]]
   ): ObjectScynamoDecoder[A] =
     scynamo.generic.semiauto.deriveScynamoDecoder[A]
 }
@@ -167,9 +168,8 @@ object ScynamoDecoderFunctions extends ScynamoDecoderFunctions
 
 trait ScynamoDecoderFunctions {
   def convert[A, B](s: A, to: String = "(unknown)")(convertor: A => B): EitherNec[ScynamoDecodeError, B] =
-    try {
-      Right(convertor(s))
-    } catch {
+    try Right(convertor(s))
+    catch {
       case NonFatal(e) => Either.leftNec(ScynamoDecodeError.conversionError(s.toString, to, Some(e)))
     }
 }

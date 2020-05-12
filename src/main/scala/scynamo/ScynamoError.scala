@@ -18,10 +18,11 @@ object ScynamoError {
 }
 
 sealed abstract class ScynamoEncodeError extends ScynamoError {
-  def push(frame: StackFrame): ScynamoEncodeError = this match {
-    case err @ ScynamoEncodeError.InvalidEmptyValue(_, _) => err.copy(stack = err.stack.push(frame))
-    case err @ ScynamoEncodeError.GeneralError(_, _, _)   => err.copy(stack = err.stack.push(frame))
-  }
+  def push(frame: StackFrame): ScynamoEncodeError =
+    this match {
+      case err @ ScynamoEncodeError.InvalidEmptyValue(_, _) => err.copy(stack = err.stack.push(frame))
+      case err @ ScynamoEncodeError.GeneralError(_, _, _)   => err.copy(stack = err.stack.push(frame))
+    }
 }
 
 object ScynamoEncodeError {
@@ -40,14 +41,15 @@ object ScynamoEncodeError {
 }
 
 sealed abstract class ScynamoDecodeError extends ScynamoError {
-  def push(frame: StackFrame): ScynamoDecodeError = this match {
-    case err @ ScynamoDecodeError.MissingField(_, _, _)          => err.copy(stack = err.stack.push(frame))
-    case err @ ScynamoDecodeError.TypeMismatch(_, _, _)          => err.copy(stack = err.stack.push(frame))
-    case err @ ScynamoDecodeError.InvalidCoproductCaseMap(_, _)  => err.copy(stack = err.stack.push(frame))
-    case err @ ScynamoDecodeError.InvalidCoproductCaseAttr(_, _) => err.copy(stack = err.stack.push(frame))
-    case err @ ScynamoDecodeError.ConversionError(_, _, _, _)    => err.copy(stack = err.stack.push(frame))
-    case err @ ScynamoDecodeError.GeneralError(_, _, _)          => err.copy(stack = err.stack.push(frame))
-  }
+  def push(frame: StackFrame): ScynamoDecodeError =
+    this match {
+      case err @ ScynamoDecodeError.MissingField(_, _, _)          => err.copy(stack = err.stack.push(frame))
+      case err @ ScynamoDecodeError.TypeMismatch(_, _, _)          => err.copy(stack = err.stack.push(frame))
+      case err @ ScynamoDecodeError.InvalidCoproductCaseMap(_, _)  => err.copy(stack = err.stack.push(frame))
+      case err @ ScynamoDecodeError.InvalidCoproductCaseAttr(_, _) => err.copy(stack = err.stack.push(frame))
+      case err @ ScynamoDecodeError.ConversionError(_, _, _, _)    => err.copy(stack = err.stack.push(frame))
+      case err @ ScynamoDecodeError.GeneralError(_, _, _)          => err.copy(stack = err.stack.push(frame))
+    }
 }
 
 object ScynamoDecodeError {

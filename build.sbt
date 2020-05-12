@@ -16,7 +16,6 @@ lazy val root = project.in(file("."))
         case _             => Seq()
       }
     },
-    scalafmtOnCompile := true,
     licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0")),
     scmInfo := Some(ScmInfo(url("https://github.com/moia-dev/scynamo"), "scm:git@github.com:moia-dev/scynamo.git")),
     homepage := Some(url("https://github.com/moia-dev/scynamo")),

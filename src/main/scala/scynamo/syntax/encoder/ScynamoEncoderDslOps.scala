@@ -17,10 +17,11 @@ class ScynamoEncoderDslOps[A](val value: A) extends AnyVal {
   def encodedMapUnsafe(implicit encoder: ObjectScynamoEncoder[A]): util.Map[String, AttributeValue] =
     unsafeUnwrap(encoder.encodeMap(value))
 
-  private[this] def unsafeUnwrap[B](input: EitherNec[ScynamoEncodeError, B]): B = input match {
-    case Left(errors) => throw new IllegalArgumentException(s"Decoding as a map failed with: ${errors.map(_.show)}")
-    case Right(value) => value
-  }
+  private[this] def unsafeUnwrap[B](input: EitherNec[ScynamoEncodeError, B]): B =
+    input match {
+      case Left(errors) => throw new IllegalArgumentException(s"Decoding as a map failed with: ${errors.map(_.show)}")
+      case Right(value) => value
+    }
 }
 
 trait ScynamoEncoderDsl {
