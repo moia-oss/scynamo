@@ -18,9 +18,7 @@ class ScynamoTest extends UnitTest {
         encodedInput <- input.encodedMap
         response = GetItemResponse.builder().item(encodedInput).build()
         result <- Scynamo.decodeGetItemResponse[Map[String, String]](response)
-      } yield {
-        result
-      }
+      } yield result
 
       result should ===(Right(Some(input)))
     }

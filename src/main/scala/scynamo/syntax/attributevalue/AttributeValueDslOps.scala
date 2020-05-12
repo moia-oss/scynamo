@@ -25,18 +25,19 @@ class AttributeValueDslOps(val attributeValue: AttributeValue) extends AnyVal {
   private[this] def nsOpt: Option[util.List[String]]               = if (attributeValue.hasNs) Some(attributeValue.ns) else None
   private[this] def ssOpt: Option[util.List[String]]               = if (attributeValue.hasSs) Some(attributeValue.ss) else None
 
-  def asOption[A, R](typ: ScynamoType.Aux[R]): Option[R] = typ match {
-    case ScynamoType.Null      => nulOpt
-    case ScynamoType.Bool      => boolOpt
-    case ScynamoType.String    => sOpt
-    case ScynamoType.Number    => nOpt
-    case ScynamoType.Binary    => bOpt
-    case ScynamoType.Map       => mOpt
-    case ScynamoType.List      => lOpt
-    case ScynamoType.StringSet => ssOpt
-    case ScynamoType.NumberSet => nsOpt
-    case ScynamoType.BinarySet => bsOpt
-  }
+  def asOption[A, R](typ: ScynamoType.Aux[R]): Option[R] =
+    typ match {
+      case ScynamoType.Null      => nulOpt
+      case ScynamoType.Bool      => boolOpt
+      case ScynamoType.String    => sOpt
+      case ScynamoType.Number    => nOpt
+      case ScynamoType.Binary    => bOpt
+      case ScynamoType.Map       => mOpt
+      case ScynamoType.List      => lOpt
+      case ScynamoType.StringSet => ssOpt
+      case ScynamoType.NumberSet => nsOpt
+      case ScynamoType.BinarySet => bsOpt
+    }
 
   def asEither[A, R](typ: ScynamoType.Aux[R]): Either[NonEmptyChain[TypeMismatch], R] =
     attributeValue.asOption(typ) match {

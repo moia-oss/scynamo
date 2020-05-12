@@ -19,8 +19,7 @@ object ShapelessScynamoDecoder extends DecoderHListInstances with DecoderCoprodu
 trait DecoderHListInstances extends ScynamoDecoderFunctions {
   implicit def deriveHNil[Base]: ShapelessScynamoDecoder[Base, HNil] = _ => Right(HNil)
 
-  implicit def deriveHCons[Base, K <: Symbol, V, T <: HList](
-      implicit
+  implicit def deriveHCons[Base, K <: Symbol, V, T <: HList](implicit
       key: Witness.Aux[K],
       sv: Lazy[ScynamoDecoder[V]],
       st: ShapelessScynamoDecoder[Base, T],
@@ -46,23 +45,20 @@ trait DecoderCoproductInstances extends ScynamoDecoderFunctions {
   implicit def deriveCNil[Base]: ShapelessScynamoDecoder[Base, CNil] =
     value => Either.leftNec(ScynamoDecodeError.invalidCoproductCaseMap(value))
 
-  implicit def deriveCCons[Base, K <: Symbol, V, T <: Coproduct](
-      implicit
+  implicit def deriveCCons[Base, K <: Symbol, V, T <: Coproduct](implicit
       key: Witness.Aux[K],
       sv: Lazy[ScynamoDecoder[V]],
       st: ShapelessScynamoDecoder[Base, T],
       opts: ScynamoSealedTraitOpts[Base] = ScynamoSealedTraitOpts.default[Base]
   ): ShapelessScynamoDecoder[Base, FieldType[K, V] :+: T] =
     value => {
-      if (value.containsKey(opts.discriminator)) {
+      if (value.containsKey(opts.discriminator))
         deriveCConsTagged[Base, K, V, T].decodeMap(value)
-      } else {
+      else
         deriveCConsNested[Base, K, V, T].decodeMap(value)
-      }
     }
 
-  def deriveCConsTagged[Base, K <: Symbol, V, T <: Coproduct](
-      implicit
+  def deriveCConsTagged[Base, K <: Symbol, V, T <: Coproduct](implicit
       key: Witness.Aux[K],
       sv: Lazy[ScynamoDecoder[V]],
       st: ShapelessScynamoDecoder[Base, T],
@@ -75,16 +71,15 @@ trait DecoderCoproductInstances extends ScynamoDecoderFunctions {
           .map(Right(_))
           .getOrElse(Either.leftNec(ScynamoDecodeError.missingField(name, value)))
         typeTag <- typeTagAttrValue.asEither(ScynamoType.String)
-        result <- if (name == typeTag) {
-          sv.value.decode(AttributeValue.builder().m(value).build()).map(v => Inl(field[K](v))).leftMap(_.map(_.push(Case(name))))
-        } else {
-          st.decodeMap(value).map(Inr(_))
-        }
+        result <-
+          if (name == typeTag)
+            sv.value.decode(AttributeValue.builder().m(value).build()).map(v => Inl(field[K](v))).leftMap(_.map(_.push(Case(name))))
+          else
+            st.decodeMap(value).map(Inr(_))
       } yield result
     }
 
-  def deriveCConsNested[Base, K <: Symbol, V, T <: Coproduct](
-      implicit
+  def deriveCConsNested[Base, K <: Symbol, V, T <: Coproduct](implicit
       key: Witness.Aux[K],
       sv: Lazy[ScynamoDecoder[V]],
       st: ShapelessScynamoDecoder[Base, T],

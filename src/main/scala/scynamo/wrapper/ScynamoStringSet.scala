@@ -16,11 +16,10 @@ object ScynamoStringSet {
   def apply(value: Set[String]) = new ScynamoStringSet(value)
 
   implicit val scynamoStringSetEncoder: ScynamoEncoder[ScynamoStringSet] = value =>
-    if (value.value.nonEmpty) {
+    if (value.value.nonEmpty)
       Right(AttributeValue.builder().ss(value.value.asJava).build())
-    } else {
+    else
       Either.leftNec(ScynamoEncodeError.invalidEmptyValue(ScynamoType.StringSet))
-    }
 
   implicit val scynamoStringSetDecoder: ScynamoDecoder[ScynamoStringSet] = attributeValue =>
     attributeValue.asOption(ScynamoType.StringSet) match {
@@ -67,11 +66,10 @@ object ScynamoNumberSet {
 
   private[this] def numberSetEncoder[A]: ScynamoEncoder[ScynamoNumberSet[A]] =
     value =>
-      if (value.value.nonEmpty) {
+      if (value.value.nonEmpty)
         Right(AttributeValue.builder().ns(value.value.map(_.toString).asJava).build())
-      } else {
+      else
         Either.leftNec(ScynamoEncodeError.invalidEmptyValue(ScynamoType.NumberSet))
-      }
 
   private[this] def numberSetDecoder[A](targetTypeName: String)(f: String => A): ScynamoDecoder[ScynamoNumberSet[A]] =
     attributeValue =>
@@ -87,11 +85,10 @@ object ScynamoBinarySet {
   def apply(value: Set[SdkBytes]): ScynamoBinarySet = new ScynamoBinarySet(value)
 
   implicit val scynamoBinarySetEncoder: ScynamoEncoder[ScynamoBinarySet] = value =>
-    if (value.value.nonEmpty) {
+    if (value.value.nonEmpty)
       Right(AttributeValue.builder().bs(value.value.asJava).build())
-    } else {
+    else
       Either.leftNec(ScynamoEncodeError.invalidEmptyValue(ScynamoType.BinarySet))
-    }
 
   implicit val scynamoBinarySetDecoder: ScynamoDecoder[ScynamoBinarySet] = attributeValue =>
     attributeValue.asOption(ScynamoType.BinarySet) match {
