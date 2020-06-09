@@ -33,4 +33,4 @@ jobs:
             ~/.sbt
           key: ${{ runner.os }}-sbt-ivy-cache-${{ hashFiles('**/build.sbt') }}-${{ hashFiles('**/plugins.sbt') }}-${{ hashFiles('**/build.properties') }}
       - name: Compile and test
-        run: sbt "; docs/mdoc; +test; +doc; version"
+        run: sbt -batch "; docs/mdoc; +test; +doc; version"
