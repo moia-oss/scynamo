@@ -21,7 +21,7 @@ jobs:
         run: sbt scalafmtCheckAll
 
   test:
-    name: Scapegoat
+    name: Compile and test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
