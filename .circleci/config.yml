@@ -1,0 +1,62 @@
+version: 2
+
+references:
+  dependencies_key: &dependencies_key
+                      sbt-v1-deps-{{ checksum "project/build.properties" }}-{{ checksum "project/plugins.sbt" }}-{{ checksum "build.sbt" }}
+
+  restore_dependencies: &restore_dependencies
+    restore_cache:
+      keys:
+        - *dependencies_key
+
+  sbt_image: &sbt_image
+               moia/scala-on-circleci:8u232-2.12.10-sbt-1.3.8
+
+jobs:
+  scalaFmt:
+    docker:
+      - image: *sbt_image
+    steps:
+      - checkout
+      - *restore_dependencies
+      - run:
+          name: Check formatting
+          command: sbt -batch scalafmtCheckAll
+      - save_cache:
+          key: *dependencies_key
+          paths:
+            - ~/.m2
+            - ~/.ivy2
+            - ~/.sbt
+            - ~/.cache/coursier/
+
+  test:
+    docker:
+      - image: *sbt_image
+    steps:
+      - checkout
+      - *restore_dependencies
+      - run:
+          name: Compile and Test
+          command: |
+            sbt -batch "; docs/mdoc; +test; +doc; version"
+      - save_cache:
+          key: *dependencies_key
+          paths:
+            - ~/.m2
+            - ~/.ivy2
+            - ~/.sbt
+            - ~/.cache/coursier/
+
+workflows:
+  version: 2
+  testDevelopmentBranch:
+    jobs:
+      - scalaFmt:
+          filters:
+            tags:
+              ignore: /.*/
+      - test:
+          filters:
+            tags:
+              ignore: /.*/
