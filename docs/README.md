@@ -156,6 +156,7 @@ val emptyStringCodec = ScynamoCodec.fromEncoderAndDecoder[String].imap[String]{
   case s => s
 }
 ```
+
 ##### `orElse`
 
 Use `orElse` to specify fallbacks:
