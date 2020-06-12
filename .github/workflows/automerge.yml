@@ -1,0 +1,32 @@
+name: automerge
+on:
+  pull_request:
+    types:
+      - labeled
+      - synchronize
+      - opened
+      - edited
+      - ready_for_review
+      - reopened
+      - unlocked
+  pull_request_review:
+    types:
+      - submitted
+  check_suite:
+    types:
+      - completed
+  status: {}
+jobs:
+  automerge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: automerge
+        uses: pascalgn/automerge-action@v0.8.4
+        env:
+          MERGE_LABELS: "library-update"
+          MERGE_METHOD: "squash"
+          MERGE_COMMIT_MESSAGE: "pull-request-title"
+          MERGE_FILTER_AUTHOR: "moia-pipeline"
+          MERGE_FORKS: "false"
+          MERGE_DELETE_BRANCH: "true"
+          UPDATE_LABELS: "library-update"
