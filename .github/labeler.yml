@@ -27,4 +27,3 @@ labels:
     include:
       - '\blabels:\s(\w\-*)+\-(update)\b'
     exclude: []
-    
