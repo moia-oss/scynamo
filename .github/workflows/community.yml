@@ -1,9 +1,7 @@
 name: Auto Labeler
 on:
-  issues:
-    types: [opened, edited, milestoned]
   pull_request:
-    types: [opened]
+    types: [opened, edited]
 
 jobs:
 
