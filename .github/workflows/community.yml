@@ -1,0 +1,20 @@
+name: Auto Labeler
+on:
+  issues:
+    types: [opened, edited, milestoned]
+  pull_request:
+    types: [opened]
+
+jobs:
+
+  labeler:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Auto Labeler
+        id: labeler
+        uses: jimschubert/labeler-action@v1
+        with:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+
