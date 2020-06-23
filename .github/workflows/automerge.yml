@@ -1,0 +1,30 @@
+name: automerge
+on:
+  label:
+    types:
+      - created
+  pull_request_review:
+    types:
+      - submitted
+  check_suite:
+    types:
+      - completed
+  status: {}
+jobs:
+  automerge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: automerge
+        uses: pascalgn/automerge-action@v0.8.4
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          MERGE_LABELS: "automerge"
+          MERGE_METHOD: "squash"
+          MERGE_COMMIT_MESSAGE: "pull-request-title"
+          MERGE_FILTER_AUTHOR: "moia-pipeline"
+          MERGE_FORKS: "false"
+          MERGE_RETRIES: "5"
+          MERGE_DELETE_BRANCH: "true"
+          UPDATE_LABELS: "automerge"
+          UPDATE_METHOD: "merge"
+
