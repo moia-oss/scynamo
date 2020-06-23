@@ -1,8 +1,8 @@
 name: automerge
 on:
-  label:
+  pull_request:
     types:
-      - created
+      - labeled
   pull_request_review:
     types:
       - submitted
