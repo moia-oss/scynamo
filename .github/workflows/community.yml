@@ -1,0 +1,19 @@
+name: Community
+on:
+  issues:
+    types: [opened, edited, milestoned]
+  pull_request:
+    types: [opened, ready_for_review, reopened]
+
+jobs:
+
+  labeler:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check Labels
+        id: labeler
+        uses: jimschubert/labeler-action@v1
+        with:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
