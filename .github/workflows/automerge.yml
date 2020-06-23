@@ -1,10 +1,8 @@
 name: automerge
 on:
-  pull_request:
+  label:
     types:
-      - opened
-      - ready_for_review
-      - reopened
+      - created
   pull_request_review:
     types:
       - submitted
