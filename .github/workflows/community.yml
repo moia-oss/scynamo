@@ -1,7 +1,9 @@
-name: Auto Labeler
+name: Community
 on:
+  issues:
+    types: [opened, edited, milestoned]
   pull_request:
-    types: [opened, edited]
+    types: [opened, ready_for_review, reopened]
 
 jobs:
 
@@ -9,11 +11,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Auto Labeler
+      - name: Check Labels
         id: labeler
         uses: jimschubert/labeler-action@v1
         with:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-
-
 
