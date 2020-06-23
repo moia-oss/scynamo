@@ -3,6 +3,7 @@ on:
   pull_request:
     types:
       - labeled
+      - opened
   pull_request_review:
     types:
       - submitted
