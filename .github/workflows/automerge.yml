@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: automerge
         uses: pascalgn/automerge-action@v0.8.4
+        with:
+          args: "--trace"
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
           MERGE_LABELS: "automerge"
@@ -23,8 +25,7 @@ jobs:
           MERGE_COMMIT_MESSAGE: "pull-request-title"
           MERGE_FILTER_AUTHOR: "moia-pipeline"
           MERGE_FORKS: "false"
-          MERGE_RETRIES: "2"
-          MERGE_RETRY_SLEEP: "10000"
+          MERGE_RETRIES: "5"
           MERGE_DELETE_BRANCH: "true"
           UPDATE_LABELS: "automerge"
           UPDATE_METHOD: "merge"
