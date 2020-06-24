@@ -29,4 +29,5 @@ jobs:
           MERGE_DELETE_BRANCH: "true"
           UPDATE_LABELS: "automerge"
           UPDATE_METHOD: "merge"
+          UPDATE_RETRIES: "5"
 
