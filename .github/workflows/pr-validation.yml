@@ -31,9 +31,10 @@ jobs:
           key: ${{ runner.os }}-sbt-ivy-cache-${{ hashFiles('**/build.sbt') }}-${{ hashFiles('**/plugins.sbt') }}-${{ hashFiles('**/build.properties') }}
       - name: Compile and test
         run: sbt -batch "; docs/mdoc; +test; +doc; version"
-        
+
     automerge:
       runs-on: ubuntu-latest
+      needs: [scalaFmt, test]
       steps:
         - name: automerge
           uses: "pascalgn/automerge-action@4536e8847eb62fe2f0ee52c8fa92d17aa97f932f"
