@@ -12,7 +12,7 @@ jobs:
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
           MERGE_LABELS: "automerge"
-          MERGE_METHOD: "squash"
+          MERGE_METHOD: "merge"
           MERGE_COMMIT_MESSAGE: "pull-request-title"
           MERGE_FILTER_AUTHOR: "CristinaHG"
           MERGE_FORKS: "false"
