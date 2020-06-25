@@ -31,3 +31,24 @@ jobs:
           key: ${{ runner.os }}-sbt-ivy-cache-${{ hashFiles('**/build.sbt') }}-${{ hashFiles('**/plugins.sbt') }}-${{ hashFiles('**/build.properties') }}
       - name: Compile and test
         run: sbt -batch "; docs/mdoc; +test; +doc; version"
+
+  automerge:
+    runs-on: ubuntu-latest
+    needs: [scalaFmt, test]
+    steps:
+      - name: automerge
+        uses: "pascalgn/automerge-action@c2174ed3528ef18341085aeb27d2b562ea02f078"
+        with:
+          args: "--trace"
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          MERGE_LABELS: "automerge"
+          MERGE_METHOD: "squash"
+          MERGE_COMMIT_MESSAGE: "pull-request-title"
+          MERGE_FILTER_AUTHOR: "CristinaHG"
+          MERGE_FORKS: "false"
+          MERGE_RETRIES: "5"
+          MERGE_DELETE_BRANCH: "true"
+          UPDATE_LABELS: "automerge"
+          UPDATE_METHOD: "merge"
+          UPDATE_RETRIES: "5"
