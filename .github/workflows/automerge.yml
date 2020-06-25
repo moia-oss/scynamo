@@ -6,7 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: automerge
-        uses: pascalgn/automerge-action@v0.8.4
+        uses: "pascalgn/automerge-action@c2174ed3528ef18341085aeb27d2b562ea02f078"
         with:
           args: "--trace"
         env:
