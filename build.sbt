@@ -22,7 +22,7 @@ lazy val root = project.in(file("."))
     libraryDependencies ++= Seq(
       "org.scalatest"          %% "scalatest"               % "3.2.0" % Test,
       "com.chuusai"            %% "shapeless"               % "2.3.3",
-      "software.amazon.awssdk" % "dynamodb"                 % "2.13.56",
+      "software.amazon.awssdk" % "dynamodb"                 % "2.13.66",
       "org.typelevel"          %% "cats-core"               % "2.1.1",
       "org.scalacheck"         %% "scalacheck"              % "1.14.3" % Test,
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6",
