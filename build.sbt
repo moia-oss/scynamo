@@ -23,7 +23,7 @@ lazy val root = project.in(file("."))
       "org.scalatest"          %% "scalatest"               % "3.2.2" % Test,
       "com.chuusai"            %% "shapeless"               % "2.3.3",
       "software.amazon.awssdk" % "dynamodb"                 % "2.14.7",
-      "org.typelevel"          %% "cats-core"               % "2.1.1",
+      "org.typelevel"          %% "cats-core"               % "2.2.0",
       "org.scalacheck"         %% "scalacheck"              % "1.14.3" % Test,
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6",
       "org.scala-lang.modules" %% "scala-java8-compat" % "0.9.1"

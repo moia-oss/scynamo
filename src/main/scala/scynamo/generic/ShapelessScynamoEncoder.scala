@@ -4,7 +4,6 @@ import java.util
 import java.util.Collections
 
 import cats.data.EitherNec
-import cats.instances.either._
 import cats.syntax.either._
 import cats.syntax.parallel._
 import scynamo.StackFrame.{Attr, Case}

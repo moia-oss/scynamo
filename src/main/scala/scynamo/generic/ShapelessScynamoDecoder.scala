@@ -1,7 +1,6 @@
 package scynamo.generic
 
 import cats.data.EitherNec
-import cats.instances.either._
 import cats.syntax.apply._
 import cats.syntax.either._
 import scynamo.StackFrame.{Attr, Case}

@@ -1,7 +1,4 @@
 package scynamo.wrapper
-
-import cats.instances.either._
-import cats.instances.list._
 import cats.syntax.either._
 import cats.syntax.parallel._
 import scynamo.syntax.attributevalue._

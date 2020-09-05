@@ -5,8 +5,6 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 import cats.data.{EitherNec, NonEmptyChain}
-import cats.instances.either._
-import cats.instances.vector._
 import cats.syntax.either._
 import cats.syntax.parallel._
 import cats.{Functor, SemigroupK}
