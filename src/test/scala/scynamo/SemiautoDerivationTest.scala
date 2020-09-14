@@ -27,8 +27,8 @@ class SemiautoDerivationTest extends UnitTest {
 
         decoded should ===(Right(input))
 
-        Inside.inside(encoded.flatMap(_.decode[Map[String, AttributeValue]])) {
-          case Right(value) => value.keySet should contain("thisnamehasuppercaseletters")
+        Inside.inside(encoded.flatMap(_.decode[Map[String, AttributeValue]])) { case Right(value) =>
+          value.keySet should contain("thisnamehasuppercaseletters")
         }
       }
 
@@ -50,11 +50,10 @@ class SemiautoDerivationTest extends UnitTest {
           val decoded = encoded.flatMap(_.decode[Foobar])
 
           decoded should ===(Right(input))
-          Inside.inside(encoded.flatMap(_.decode[Map[String, AttributeValue]])) {
-            case Right(encodedMap) =>
-              Inside.inside(encodedMap.get(Foobar.sealedTraitOpts.discriminator).map(_.decode[String])) {
-                case Some(Right(tag)) => tag should be("FOO").or(be("BAR"))
-              }
+          Inside.inside(encoded.flatMap(_.decode[Map[String, AttributeValue]])) { case Right(encodedMap) =>
+            Inside.inside(encodedMap.get(Foobar.sealedTraitOpts.discriminator).map(_.decode[String])) { case Some(Right(tag)) =>
+              tag should be("FOO").or(be("BAR"))
+            }
           }
         }
       }
@@ -79,8 +78,8 @@ class SemiautoDerivationTest extends UnitTest {
 
         val result = List[Mixed](CaseObject, CaseClass(42)).encoded
 
-        Inside.inside(result) {
-          case Right(av) => av.l.size should ===(2)
+        Inside.inside(result) { case Right(av) =>
+          av.l.size should ===(2)
         }
       }
     }

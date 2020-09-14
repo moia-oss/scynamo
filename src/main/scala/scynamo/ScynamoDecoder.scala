@@ -126,9 +126,8 @@ trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with Scynam
     attributeValue =>
       attributeValue.asEither(ScynamoType.Map).flatMap { javaMap =>
         javaMap.asScala.toVector.zipWithIndex
-          .parTraverse {
-            case ((key, value), i) =>
-              (keyDecoder.decode(key), valueDecoder.decode(value)).parMapN(_ -> _).leftMap(_.map(_.push(Index(i))))
+          .parTraverse { case ((key, value), i) =>
+            (keyDecoder.decode(key), valueDecoder.decode(value)).parMapN(_ -> _).leftMap(_.map(_.push(Index(i))))
           }
           .map(_.toMap)
       }

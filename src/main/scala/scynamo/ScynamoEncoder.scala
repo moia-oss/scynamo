@@ -64,18 +64,16 @@ trait DefaultScynamoEncoderInstances extends ScynamoIterableEncoder {
   implicit def listEncoder[A: ScynamoEncoder]: ScynamoEncoder[List[A]] =
     value =>
       value.zipWithIndex
-        .parTraverse {
-          case (x, i) =>
-            ScynamoEncoder[A].encode(x).leftMap(_.map(_.push(Index(i))))
+        .parTraverse { case (x, i) =>
+          ScynamoEncoder[A].encode(x).leftMap(_.map(_.push(Index(i))))
         }
         .map(xs => AttributeValue.builder().l(xs: _*).build())
 
   implicit def vectorEncoder[A: ScynamoEncoder]: ScynamoEncoder[Vector[A]] =
     value =>
       value.zipWithIndex
-        .parTraverse {
-          case (x, i) =>
-            ScynamoEncoder[A].encode(x).leftMap(_.map(_.push(Index(i))))
+        .parTraverse { case (x, i) =>
+          ScynamoEncoder[A].encode(x).leftMap(_.map(_.push(Index(i))))
         }
         .map(xs => AttributeValue.builder().l(xs: _*).build())
 
@@ -95,14 +93,13 @@ trait DefaultScynamoEncoderInstances extends ScynamoIterableEncoder {
   implicit def mapEncoder[A, B](implicit keyEncoder: ScynamoKeyEncoder[A], valueEncoder: ScynamoEncoder[B]): ScynamoEncoder[Map[A, B]] =
     value => {
       value.toVector
-        .parTraverse {
-          case (k, v) => (keyEncoder.encode(k), valueEncoder.encode(v)).parMapN(_ -> _).leftMap(_.map(_.push(MapKey(k))))
+        .parTraverse { case (k, v) =>
+          (keyEncoder.encode(k), valueEncoder.encode(v)).parMapN(_ -> _).leftMap(_.map(_.push(MapKey(k))))
         }
         .map {
-          _.foldLeft(new java.util.HashMap[String, AttributeValue]()) {
-            case (acc, (k, v)) =>
-              acc.put(k, v)
-              acc
+          _.foldLeft(new java.util.HashMap[String, AttributeValue]()) { case (acc, (k, v)) =>
+            acc.put(k, v)
+            acc
           }
         }
         .map(hm => AttributeValue.builder().m(hm).build())
@@ -156,10 +153,9 @@ object ObjectScynamoEncoder extends SemiautoDerivationEncoder {
       value.toList
         .parTraverse { case (k, v) => valueEncoder.encode(v).map(k -> _) }
         .map {
-          _.foldLeft(new java.util.HashMap[String, AttributeValue]()) {
-            case (acc, (k, v)) =>
-              acc.put(k, v)
-              acc
+          _.foldLeft(new java.util.HashMap[String, AttributeValue]()) { case (acc, (k, v)) =>
+            acc.put(k, v)
+            acc
           }
         }
     }

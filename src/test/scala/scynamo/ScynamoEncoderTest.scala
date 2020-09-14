@@ -62,8 +62,8 @@ class ScynamoEncoderTest extends UnitTest {
 
       val result = ScynamoEncoder[Root].encode(input)
 
-      Inside.inside(result) {
-        case Left(errs) => errs.head.stack.frames should ===(List(Attr("level1"), Attr("level2"), Case("Level2Impl"), Attr("value")))
+      Inside.inside(result) { case Left(errs) =>
+        errs.head.stack.frames should ===(List(Attr("level1"), Attr("level2"), Case("Level2Impl"), Attr("value")))
       }
     }
 
@@ -74,8 +74,8 @@ class ScynamoEncoderTest extends UnitTest {
 
       val result = input.encoded
 
-      Inside.inside(result) {
-        case Left(es) => es.head.stack.frames should ===(List(Index(1)))
+      Inside.inside(result) { case Left(es) =>
+        es.head.stack.frames should ===(List(Index(1)))
       }
     }
 
@@ -87,8 +87,8 @@ class ScynamoEncoderTest extends UnitTest {
 
       val result = input.encoded
 
-      Inside.inside(result) {
-        case Left(es) => es.head.stack.frames should ===(List(MapKey(keyName)))
+      Inside.inside(result) { case Left(es) =>
+        es.head.stack.frames should ===(List(MapKey(keyName)))
       }
     }
 

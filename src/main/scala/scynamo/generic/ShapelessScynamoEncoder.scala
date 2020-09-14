@@ -33,12 +33,11 @@ trait EncoderHListInstances {
       val encodedHead = sv.value.encode(value.head).leftMap(x => x.map(_.push(Attr(fieldName))))
       val encodedTail = st.encodeMap(value.tail)
 
-      (encodedHead, encodedTail).parMapN {
-        case (head, tail) =>
-          val hm = new util.HashMap[String, AttributeValue]()
-          hm.putAll(tail)
-          hm.put(fieldName, head)
-          hm
+      (encodedHead, encodedTail).parMapN { case (head, tail) =>
+        val hm = new util.HashMap[String, AttributeValue]()
+        hm.putAll(tail)
+        hm.put(fieldName, head)
+        hm
       }
     }
 }
