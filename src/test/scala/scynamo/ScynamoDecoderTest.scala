@@ -43,8 +43,8 @@ class ScynamoDecoderTest extends UnitTest {
 
       val result = ScynamoDecoder[scala.collection.immutable.Seq[Int]].decode(input)
 
-      Inside.inside(result) {
-        case Left(value) => value.toNonEmptyList.toList should have size 3
+      Inside.inside(result) { case Left(value) =>
+        value.toNonEmptyList.toList should have size 3
       }
     }
 
@@ -98,11 +98,10 @@ class ScynamoDecoderTest extends UnitTest {
 
       val decoded = input.flatMap(ObjectScynamoCodec[Foo].decode)
 
-      Inside.inside(decoded) {
-        case Left(errs) =>
-          Inspectors.forAll(errs.toNonEmptyList.toList)(err =>
-            (err.stack.frames should contain).theSameElementsInOrderAs(List(Attr("bar"), Attr("baz"), Case("Qux"), Attr("answer")))
-          )
+      Inside.inside(decoded) { case Left(errs) =>
+        Inspectors.forAll(errs.toNonEmptyList.toList)(err =>
+          (err.stack.frames should contain).theSameElementsInOrderAs(List(Attr("bar"), Attr("baz"), Case("Qux"), Attr("answer")))
+        )
       }
     }
 
@@ -113,8 +112,8 @@ class ScynamoDecoderTest extends UnitTest {
 
       val result = input.flatMap(ObjectScynamoCodec[Foobar].decode)
 
-      Inside.inside(result) {
-        case Left(errs) => errs.head.stack.frames should ===(List[StackFrame](Attr("test"), Enum("Foo")))
+      Inside.inside(result) { case Left(errs) =>
+        errs.head.stack.frames should ===(List[StackFrame](Attr("test"), Enum("Foo")))
       }
     }
   }
