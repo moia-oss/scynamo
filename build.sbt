@@ -1,10 +1,7 @@
-
-lazy val root = project.in(file("."))
+lazy val root = project
+  .in(file("."))
   .configs(IntegrationTest.extend(Test))
-  .enablePlugins(
-    GitVersioning,
-    GitBranchPrompt
-  )
+  .enablePlugins(GitVersioning, GitBranchPrompt)
   .settings(
     name := "scynamo",
     organization := "io.moia",
@@ -20,30 +17,32 @@ lazy val root = project.in(file("."))
     scmInfo := Some(ScmInfo(url("https://github.com/moia-dev/scynamo"), "scm:git@github.com:moia-dev/scynamo.git")),
     homepage := Some(url("https://github.com/moia-dev/scynamo")),
     libraryDependencies ++= Seq(
-      "org.scalatest"          %% "scalatest"               % "3.2.2" % Test,
+      "org.scalatest"          %% "scalatest"               % "3.2.2"  % Test,
       "com.chuusai"            %% "shapeless"               % "2.3.3",
-      "software.amazon.awssdk" % "dynamodb"                 % "2.14.26",
+      "software.amazon.awssdk"  % "dynamodb"                % "2.14.26",
       "org.typelevel"          %% "cats-core"               % "2.2.0",
+      "org.typelevel"          %% "cats-testkit-scalatest"  % "2.0.0"  % Test,
       "org.scalacheck"         %% "scalacheck"              % "1.14.3" % Test,
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.2.0",
-      "org.scala-lang.modules" %% "scala-java8-compat" % "0.9.1"
+      "org.scala-lang.modules" %% "scala-java8-compat"      % "0.9.1"
     )
   )
   .settings(sbtGitSettings)
   .settings(scalaFmtSettings)
   .settings(sonatypeSettings)
 
-lazy val docs = project.in(file("scynamo-docs"))
+lazy val docs = project
+  .in(file("scynamo-docs"))
   .dependsOn(root)
   .enablePlugins(MdocPlugin)
-  .settings(Seq(
-    mdocVariables := Map(
-      "VERSION" -> version.value
-    ),
-    publish := {},
-    publishLocal := {},
-    publishArtifact := false
-  ))
+  .settings(
+    Seq(
+      mdocVariables := Map("VERSION" -> version.value),
+      publish := {},
+      publishLocal := {},
+      publishArtifact := false
+    )
+  )
 
 lazy val scalacOptions_2_12 = Seq(
   "-unchecked",
