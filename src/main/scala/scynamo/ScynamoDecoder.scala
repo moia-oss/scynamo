@@ -5,17 +5,16 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 import cats.data.{EitherNec, NonEmptyChain}
-import cats.instances.either._
-import cats.instances.vector._
 import cats.syntax.either._
 import cats.syntax.parallel._
-import cats.{Functor, SemigroupK}
+import cats.{Monad, SemigroupK}
 import scynamo.StackFrame.Index
 import scynamo.generic.auto.AutoDerivationUnlocked
 import scynamo.generic.{GenericScynamoDecoder, SemiautoDerivationDecoder}
 import shapeless.Lazy
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
+import scala.annotation.tailrec
 import scala.collection.compat._
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.jdk.CollectionConverters._
@@ -42,31 +41,58 @@ object StackFrame {
   case class Custom(name: String) extends StackFrame
 }
 
-trait ScynamoDecoder[A] extends ScynamoDecoderFunctions { self =>
+trait ScynamoDecoder[A] extends ScynamoDecoderFunctions {
   def decode(attributeValue: AttributeValue): EitherNec[ScynamoDecodeError, A]
 
-  def map[B](f: A => B): ScynamoDecoder[B] = value => self.decode(value).map(f)
+  def map[B](f: A => B): ScynamoDecoder[B] =
+    value => decode(value).map(f)
+
+  def flatMap[B](f: A => ScynamoDecoder[B]): ScynamoDecoder[B] =
+    value => decode(value).flatMap(f(_).decode(value))
 
   def orElse[AA >: A](other: ScynamoDecoder[A]): ScynamoDecoder[AA] =
-    (attributeValue: AttributeValue) => self.decode(attributeValue).orElse(other.decode(attributeValue))
+    value => decode(value).orElse(other.decode(value))
 
   def transform[B](f: EitherNec[ScynamoDecodeError, A] => EitherNec[ScynamoDecodeError, B]): ScynamoDecoder[B] =
-    attributeValue => f(self.decode(attributeValue))
+    value => f(decode(value))
 
   def defaultValue: Option[A] = None
 }
 
 object ScynamoDecoder extends DefaultScynamoDecoderInstances {
   def apply[A](implicit instance: ScynamoDecoder[A]): ScynamoDecoder[A] = instance
+
+  def const[A](value: A): ScynamoDecoder[A] =
+    _ => Right(value)
 }
 
 trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with ScynamoIterableDecoder {
   import scynamo.syntax.attributevalue._
-  implicit val catsInstances: Functor[ScynamoDecoder] with SemigroupK[ScynamoDecoder] =
-    new Functor[ScynamoDecoder] with SemigroupK[ScynamoDecoder] {
-      override def map[A, B](fa: ScynamoDecoder[A])(f: A => B): ScynamoDecoder[B] = fa.map(f)
 
-      override def combineK[A](x: ScynamoDecoder[A], y: ScynamoDecoder[A]): ScynamoDecoder[A] = x.orElse(y)
+  implicit val catsInstances: Monad[ScynamoDecoder] with SemigroupK[ScynamoDecoder] =
+    new Monad[ScynamoDecoder] with SemigroupK[ScynamoDecoder] {
+      override def map[A, B](fa: ScynamoDecoder[A])(f: A => B): ScynamoDecoder[B] =
+        fa.map(f)
+
+      override def pure[A](x: A): ScynamoDecoder[A] =
+        ScynamoDecoder.const(x)
+
+      override def flatMap[A, B](fa: ScynamoDecoder[A])(f: A => ScynamoDecoder[B]): ScynamoDecoder[B] =
+        fa.flatMap(f)
+
+      override def tailRecM[A, B](a: A)(f: A => ScynamoDecoder[Either[A, B]]): ScynamoDecoder[B] = {
+        @tailrec def go(a: A, value: AttributeValue): EitherNec[ScynamoDecodeError, B] =
+          f(a).decode(value) match {
+            case Right(Left(a))  => go(a, value)
+            case Right(Right(b)) => Right(b)
+            case Left(errors)    => Left(errors)
+          }
+
+        go(a, _)
+      }
+
+      override def combineK[A](x: ScynamoDecoder[A], y: ScynamoDecoder[A]): ScynamoDecoder[A] =
+        x.orElse(y)
     }
 
   implicit val stringDecoder: ScynamoDecoder[String] = attributeValue => attributeValue.asEither(ScynamoType.String)
@@ -128,9 +154,8 @@ trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with Scynam
     attributeValue =>
       attributeValue.asEither(ScynamoType.Map).flatMap { javaMap =>
         javaMap.asScala.toVector.zipWithIndex
-          .parTraverse {
-            case ((key, value), i) =>
-              (keyDecoder.decode(key), valueDecoder.decode(value)).parMapN(_ -> _).leftMap(_.map(_.push(Index(i))))
+          .parTraverse { case ((key, value), i) =>
+            (keyDecoder.decode(key), valueDecoder.decode(value)).parMapN(_ -> _).leftMap(_.map(_.push(Index(i))))
           }
           .map(_.toMap)
       }
@@ -176,15 +201,50 @@ trait ScynamoDecoderFunctions {
 
 trait ObjectScynamoDecoder[A] extends ScynamoDecoder[A] {
   import scynamo.syntax.attributevalue._
+
+  def decodeMap(value: java.util.Map[String, AttributeValue]): EitherNec[ScynamoDecodeError, A]
+
   override def decode(attributeValue: AttributeValue): EitherNec[ScynamoDecodeError, A] =
     attributeValue.asEither(ScynamoType.Map).flatMap(decodeMap)
 
-  def decodeMap(value: java.util.Map[String, AttributeValue]): EitherNec[ScynamoDecodeError, A]
+  override def map[B](f: A => B): ObjectScynamoDecoder[B] =
+    attributes => decodeMap(attributes).map(f)
+
+  override def transform[B](f: EitherNec[ScynamoDecodeError, A] => EitherNec[ScynamoDecodeError, B]): ObjectScynamoDecoder[B] =
+    attributes => f(decodeMap(attributes))
 }
 
 object ObjectScynamoDecoder extends ScynamoDecoderFunctions with SemiautoDerivationDecoder {
-
   def apply[A](implicit instance: ObjectScynamoDecoder[A]): ObjectScynamoDecoder[A] = instance
+
+  def const[A](value: A): ObjectScynamoDecoder[A] =
+    _ => Right(value)
+
+  implicit val catsInstances: Monad[ObjectScynamoDecoder] with SemigroupK[ObjectScynamoDecoder] =
+    new Monad[ObjectScynamoDecoder] with SemigroupK[ObjectScynamoDecoder] {
+      override def map[A, B](fa: ObjectScynamoDecoder[A])(f: A => B): ObjectScynamoDecoder[B] =
+        fa.map(f)
+
+      override def pure[A](x: A): ObjectScynamoDecoder[A] =
+        ObjectScynamoDecoder.const(x)
+
+      override def flatMap[A, B](fa: ObjectScynamoDecoder[A])(f: A => ObjectScynamoDecoder[B]): ObjectScynamoDecoder[B] =
+        attributes => fa.decodeMap(attributes).flatMap(f(_).decodeMap(attributes))
+
+      override def tailRecM[A, B](a: A)(f: A => ObjectScynamoDecoder[Either[A, B]]): ObjectScynamoDecoder[B] = {
+        @tailrec def go(a: A, attributes: java.util.Map[String, AttributeValue]): EitherNec[ScynamoDecodeError, B] =
+          f(a).decodeMap(attributes) match {
+            case Right(Left(a))  => go(a, attributes)
+            case Right(Right(b)) => Right(b)
+            case Left(errors)    => Left(errors)
+          }
+
+        go(a, _)
+      }
+
+      override def combineK[A](x: ObjectScynamoDecoder[A], y: ObjectScynamoDecoder[A]): ObjectScynamoDecoder[A] =
+        attributes => x.decodeMap(attributes).orElse(y.decodeMap(attributes))
+    }
 
   implicit def mapDecoder[A](implicit valueDecoder: ScynamoDecoder[A]): ObjectScynamoDecoder[Map[String, A]] =
     javaMap => javaMap.asScala.toVector.parTraverse { case (key, value) => valueDecoder.decode(value).map(key -> _) }.map(_.toMap)
