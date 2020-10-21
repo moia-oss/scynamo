@@ -1,15 +1,16 @@
 # Maintainer Manual
 
-## Release a new version
+## Publishing (for maintainers)
 
-Every new commit in master is built and released as a -SNAPSHOT. Once you tested that everything works, do the following to create an actual release.
+To publish a release to Maven Central follow these steps:
 
-Create an empty commit using git commit --allow-empty and specify which version you are releasing.
-
-Tag (annotated tag with description) the new commit with a v prefix, e.g. v1.0.0. The sbt-git plugin automatically sets the version to the tag without the v (1.0.0 in our example).
-
-Once the master pipeline runs, the version will be automatically published.
-
-### I pushed the *master* branch BEFORE the tag, what now?
-
-Don't worry, you can just trigger the CircleCI pipeline manually again for master even **after** pushing the tag.
+1. Create a tag/release on GitHub
+2. Publish the artifact to the OSS Sonatype stage repository:
+   ```
+   sbt +publishSigned
+   ```  
+   Note that your Sonatype credentials needs to be configured on your machine and you need to have access writes to publish artifacts to the group id `io.moia`.
+3. Release artifact to Maven Central with:
+   ```
+   sbt +sonatypeRelease
+   ```
