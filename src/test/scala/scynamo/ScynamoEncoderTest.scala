@@ -96,6 +96,10 @@ class ScynamoEncoderTest extends UnitTest {
       ScynamoEncoder[String].encode("") should ===(Either.leftNec(ScynamoEncodeError.invalidEmptyValue(ScynamoType.String)))
     }
 
+    "support option of empty string" in {
+      ScynamoEncoder[Option[String]].encode(Some("")).exists(_.nul()) shouldBe true
+    }
+
     "fail on empty string set" in {
       ScynamoEncoder[ScynamoStringSet].encode(ScynamoStringSet(Set())) should ===(
         Either.leftNec(ScynamoEncodeError.invalidEmptyValue(ScynamoType.StringSet))
