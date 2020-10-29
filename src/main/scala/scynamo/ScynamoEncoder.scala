@@ -26,19 +26,18 @@ object ScynamoEncoder extends DefaultScynamoEncoderInstances {
 }
 
 trait DefaultScynamoEncoderInstances extends ScynamoIterableEncoder {
-  implicit val stringEncoder: ScynamoEncoder[String] = value => {
-    if (value.nonEmpty)
-      Right(AttributeValue.builder().s(value).build())
-    else
-      Either.leftNec(ScynamoEncodeError.invalidEmptyValue(ScynamoType.String))
+  implicit val stringEncoder: ScynamoEncoder[String] = value =>
+    if (value.nonEmpty) Right(AttributeValue.builder().s(value).build())
+    else Either.leftNec(ScynamoEncodeError.invalidEmptyValue(ScynamoType.String))
+
+  implicit val stringOptionEncoder: ScynamoEncoder[Option[String]] = {
+    case Some("") | None => Right(AttributeValue.builder().nul(true).build())
+    case Some(value)     => stringEncoder.encode(value)
   }
 
-  private[this] val numberStringEncoder: ScynamoEncoder[String] = value => {
-    if (value.nonEmpty)
-      Right(AttributeValue.builder().n(value).build())
-    else
-      Either.leftNec(ScynamoEncodeError.invalidEmptyValue(ScynamoType.String))
-  }
+  private[this] val numberStringEncoder: ScynamoEncoder[String] = value =>
+    if (value.nonEmpty) Right(AttributeValue.builder().n(value).build())
+    else Either.leftNec(ScynamoEncodeError.invalidEmptyValue(ScynamoType.String))
 
   implicit val intEncoder: ScynamoEncoder[Int] = numberStringEncoder.contramap[Int](_.toString)
 
