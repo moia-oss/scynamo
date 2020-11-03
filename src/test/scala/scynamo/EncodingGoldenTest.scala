@@ -2,12 +2,11 @@ package scynamo
 
 import java.time.Instant
 import java.util.UUID
-import scala.concurrent.duration._
-import scynamo.syntax.encoder._
 
 import scynamo.EncodingGoldenTest._
+import scynamo.syntax.encoder._
 
-import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.concurrent.duration._
 
 class EncodingGoldenTest extends UnitTest {
   private[this] val uuid = UUID.fromString("1c4b009c-ee7e-4a47-a401-36b468ef7d1e")
@@ -28,9 +27,9 @@ class EncodingGoldenTest extends UnitTest {
       val result = input.encoded.map(_.toString)
 
       val expected =
-        "AttributeValue(SS=[], NS=[], BS=[], M={testOption=AttributeValue(N=42, SS=[], NS=[], BS=[], M={}, L=[]), testInstant=AttributeValue(N=0, SS=[], NS=[], BS=[], M={}, L=[]), testString=AttributeValue(S=abc, SS=[], NS=[], BS=[], M={}, L=[]), testFiniteDuration=AttributeValue(N=1000000000, SS=[], NS=[], BS=[], M={}, L=[]), testTraitList=AttributeValue(SS=[], NS=[], BS=[], M={}, L=[AttributeValue(SS=[], NS=[], BS=[], M={_SCYNAMO_DEFAULT_DISCRIMINATOR_=AttributeValue(S=TraitObject, SS=[], NS=[], BS=[], M={}, L=[])}, L=[]), AttributeValue(SS=[], NS=[], BS=[], M={_SCYNAMO_DEFAULT_DISCRIMINATOR_=AttributeValue(S=TraitCaseClass, SS=[], NS=[], BS=[], M={}, L=[]), testFloat=AttributeValue(N=21.21, SS=[], NS=[], BS=[], M={}, L=[])}, L=[])]), testUuid=AttributeValue(S=1c4b009c-ee7e-4a47-a401-36b468ef7d1e, SS=[], NS=[], BS=[], M={}, L=[]), testMap=AttributeValue(SS=[], NS=[], BS=[], M={1c4b009c-ee7e-4a47-a401-36b468ef7d1e=AttributeValue(S=foo, SS=[], NS=[], BS=[], M={}, L=[])}, L=[]), testDuration=AttributeValue(N=1000000000, SS=[], NS=[], BS=[], M={}, L=[])}, L=[])"
+        "AttributeValue(M={testOption=AttributeValue(N=42), testInstant=AttributeValue(N=0), testString=AttributeValue(S=abc), testFiniteDuration=AttributeValue(N=1000000000), testTraitList=AttributeValue(L=[AttributeValue(M={_SCYNAMO_DEFAULT_DISCRIMINATOR_=AttributeValue(S=TraitObject)}), AttributeValue(M={_SCYNAMO_DEFAULT_DISCRIMINATOR_=AttributeValue(S=TraitCaseClass), testFloat=AttributeValue(N=21.21)})]), testUuid=AttributeValue(S=1c4b009c-ee7e-4a47-a401-36b468ef7d1e), testMap=AttributeValue(M={1c4b009c-ee7e-4a47-a401-36b468ef7d1e=AttributeValue(S=foo)}), testDuration=AttributeValue(N=1000000000)})"
 
-      result should ===(Right(expected))
+      result shouldBe Right(expected)
     }
   }
 }
