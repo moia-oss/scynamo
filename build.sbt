@@ -17,7 +17,7 @@ lazy val root = project
     scmInfo := Some(ScmInfo(url("https://github.com/moia-dev/scynamo"), "scm:git@github.com:moia-dev/scynamo.git")),
     homepage := Some(url("https://github.com/moia-dev/scynamo")),
     libraryDependencies ++= Seq(
-      "org.scalatest"          %% "scalatest"               % "3.2.2"  % Test,
+      "org.scalatest"          %% "scalatest"               % "3.2.3"  % Test,
       "com.chuusai"            %% "shapeless"               % "2.3.3",
       "software.amazon.awssdk"  % "dynamodb"                % "2.15.23",
       "org.typelevel"          %% "cats-core"               % "2.2.0",
