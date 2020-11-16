@@ -31,3 +31,16 @@ jobs:
           key: ${{ runner.os }}-sbt-ivy-cache-${{ hashFiles('**/build.sbt') }}-${{ hashFiles('**/plugins.sbt') }}-${{ hashFiles('**/build.properties') }}
       - name: Compile and test
         run: sbt -batch "; docs/mdoc; +test; +doc; version"
+
+  merge:
+    name: Merge
+    needs:
+      - scalaFmt
+      - test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge me!
+        uses: ridedott/merge-me-action@v1
+        with:
+          GITHUB_LOGIN: moia-pipeline
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
