@@ -40,3 +40,4 @@ snapshots
 .bloop
 .scannerwork
 .deployment/ca.crt
+/.bsp/sbt.json
