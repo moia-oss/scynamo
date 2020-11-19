@@ -1,7 +1,7 @@
 package scynamo
 
-import cats.syntax.either._
 import cats.data.EitherNec
+import cats.syntax.either._
 import org.scalatest.Inside
 import scynamo.ScynamoEncoderTest.{Foo, Foo2}
 import scynamo.StackFrame.{Attr, Case, Index, MapKey}
@@ -12,7 +12,6 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 class ScynamoEncoderTest extends UnitTest {
   "ScynamoEncoder" should {
     "support custom overrides using semiauto derivation" in {
-      import scynamo.generic.auto._
       val result = ObjectScynamoCodec[Foo].encode(Foo(42))
 
       result.map(_.m.get("i").s) should ===(Right(s"${Foo.prefix}42"))
@@ -56,9 +55,9 @@ class ScynamoEncoderTest extends UnitTest {
       case class Root(level1: Level1)
       case class Level1(level2: Level2)
       sealed trait Level2
-      case class Level2Impl(value: String) extends Level2
+      case class Level2Impl(value: ScynamoStringSet) extends Level2
 
-      val input = Root(Level1(Level2Impl("")))
+      val input = Root(Level1(Level2Impl(ScynamoStringSet(Set()))))
 
       val result = ScynamoEncoder[Root].encode(input)
 
@@ -70,7 +69,7 @@ class ScynamoEncoderTest extends UnitTest {
     "provide a stack to error for lists" in {
       import scynamo.syntax.encoder._
 
-      val input = List("foo", "", "bar")
+      val input = List(ScynamoStringSet(Set("foo")), ScynamoStringSet(Set()), ScynamoStringSet(Set("bar")))
 
       val result = input.encoded
 
@@ -82,18 +81,14 @@ class ScynamoEncoderTest extends UnitTest {
     "provide a stack to error for maps" in {
       import scynamo.syntax.encoder._
 
-      val keyName = "key-for-invalid-string"
-      val input   = Map(keyName -> "")
+      val keyName = "key-for-invalid-set"
+      val input   = Map(keyName -> ScynamoStringSet(Set()))
 
       val result = input.encoded
 
       Inside.inside(result) { case Left(es) =>
         es.head.stack.frames should ===(List(MapKey(keyName)))
       }
-    }
-
-    "fail on empty string" in {
-      ScynamoEncoder[String].encode("") should ===(Either.leftNec(ScynamoEncodeError.invalidEmptyValue(ScynamoType.String)))
     }
 
     "support option of empty string" in {

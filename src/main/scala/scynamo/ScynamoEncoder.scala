@@ -26,18 +26,14 @@ object ScynamoEncoder extends DefaultScynamoEncoderInstances {
 }
 
 trait DefaultScynamoEncoderInstances extends ScynamoIterableEncoder {
-  implicit val stringEncoder: ScynamoEncoder[String] = value =>
-    if (value.nonEmpty) Right(AttributeValue.builder().s(value).build())
-    else Either.leftNec(ScynamoEncodeError.invalidEmptyValue(ScynamoType.String))
+  implicit val stringEncoder: ScynamoEncoder[String] = value => Right(AttributeValue.builder().s(value).build())
 
   implicit val stringOptionEncoder: ScynamoEncoder[Option[String]] = {
     case Some("") | None => Right(AttributeValue.builder().nul(true).build())
     case Some(value)     => stringEncoder.encode(value)
   }
 
-  private[this] val numberStringEncoder: ScynamoEncoder[String] = value =>
-    if (value.nonEmpty) Right(AttributeValue.builder().n(value).build())
-    else Either.leftNec(ScynamoEncodeError.invalidEmptyValue(ScynamoType.String))
+  private[this] val numberStringEncoder: ScynamoEncoder[String] = value => Right(AttributeValue.builder().n(value).build())
 
   implicit val intEncoder: ScynamoEncoder[Int] = numberStringEncoder.contramap[Int](_.toString)
 
@@ -107,12 +103,11 @@ trait DefaultScynamoEncoderInstances extends ScynamoIterableEncoder {
   implicit val attributeValueEncoder: ScynamoEncoder[AttributeValue] = { value =>
     import scynamo.syntax.attributevalue._
 
-    val nonEmptyString    = value.asOption(ScynamoType.String).map(x => ScynamoType.String -> x.nonEmpty)
     val nonEmptyStringSet = value.asOption(ScynamoType.StringSet).map(x => ScynamoType.StringSet -> (x.size() > 0))
     val nonEmptyNumberSet = value.asOption(ScynamoType.NumberSet).map(x => ScynamoType.NumberSet -> (x.size() > 0))
     val nonEmptyBinarySet = value.asOption(ScynamoType.BinarySet).map(x => ScynamoType.BinarySet -> (x.size() > 0))
 
-    nonEmptyString.orElse(nonEmptyStringSet).orElse(nonEmptyNumberSet).orElse(nonEmptyBinarySet) match {
+    nonEmptyStringSet.orElse(nonEmptyNumberSet).orElse(nonEmptyBinarySet) match {
       case Some((typ, false))     => Either.leftNec(ScynamoEncodeError.invalidEmptyValue(typ))
       case Some((_, true)) | None => Right(value)
     }

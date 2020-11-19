@@ -1,5 +1,6 @@
 package scynamo
 
+import scynamo.wrapper.ScynamoStringSet
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
 class DslTest extends UnitTest {
@@ -33,7 +34,7 @@ class DslTest extends UnitTest {
     "throw an exception with unsafe encoding" in {
       import scynamo.syntax.encoder._
 
-      val input = List("foo", "", "bar")
+      val input = ScynamoStringSet(Set())
 
       an[IllegalArgumentException] should be thrownBy {
         input.encodedUnsafe
