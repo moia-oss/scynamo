@@ -28,11 +28,6 @@ object ScynamoEncoder extends DefaultScynamoEncoderInstances {
 trait DefaultScynamoEncoderInstances extends ScynamoIterableEncoder {
   implicit val stringEncoder: ScynamoEncoder[String] = value => Right(AttributeValue.builder().s(value).build())
 
-  implicit val stringOptionEncoder: ScynamoEncoder[Option[String]] = {
-    case Some("") | None => Right(AttributeValue.builder().nul(true).build())
-    case Some(value)     => stringEncoder.encode(value)
-  }
-
   private[this] val numberStringEncoder: ScynamoEncoder[String] = value => Right(AttributeValue.builder().n(value).build())
 
   implicit val intEncoder: ScynamoEncoder[Int] = numberStringEncoder.contramap[Int](_.toString)
