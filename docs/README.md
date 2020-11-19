@@ -128,8 +128,7 @@ new instances.
 
 ##### `contramap`/`map`/`imap`
 
-As an example you can modify the standard `String` encoder.decoder to *not*
-fail with empty strings:
+As an example you can modify the standard `String` encoder.decoder to replace an empty `String`:
 
 ```scala mdoc
 import scynamo._
