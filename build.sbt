@@ -73,7 +73,8 @@ lazy val scalacOptions_2_13 = Seq(
   "-Xfatal-warnings",
   "-Ywarn-dead-code",
   "-Ymacro-annotations",
-  "-Xlint:-byname-implicit"
+  "-Xlint:-byname-implicit",
+  "-Xlint:strict-unsealed-patmat"
 )
 
 lazy val sbtVersionRegex = "v([0-9]+.[0-9]+.[0-9]+)-?(.*)?".r
