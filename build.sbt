@@ -20,7 +20,7 @@ lazy val root = project
       "org.scalatest"          %% "scalatest"               % "3.2.3"  % Test,
       "com.chuusai"            %% "shapeless"               % "2.3.3",
       "software.amazon.awssdk"  % "dynamodb"                % "2.15.33",
-      "org.typelevel"          %% "cats-core"               % "2.2.0",
+      "org.typelevel"          %% "cats-core"               % "2.3.0",
       "org.typelevel"          %% "cats-testkit-scalatest"  % "2.0.0"  % Test,
       "org.scalacheck"         %% "scalacheck"              % "1.15.1" % Test,
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.3.0",
