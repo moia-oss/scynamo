@@ -31,6 +31,7 @@ lazy val root = project
   .settings(sbtGitSettings)
   .settings(scalaFmtSettings)
   .settings(sonatypeSettings)
+  .settings(mimaSettings)
 
 lazy val docs = project
   .in(file("scynamo-docs"))
@@ -106,3 +107,7 @@ lazy val sonatypeSettings = {
     credentials += Credentials(Path.userHome / ".sbt" / "sonatype_credential")
   )
 }
+
+lazy val mimaSettings = Seq(
+  mimaPreviousArtifacts := Set("io.moia" %% "scynamo" % "0.6.0")
+)
