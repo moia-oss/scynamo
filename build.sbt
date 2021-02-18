@@ -14,8 +14,9 @@ lazy val root = project
       }
     },
     licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0")),
-    scmInfo := Some(ScmInfo(url("https://github.com/moia-dev/scynamo"), "scm:git@github.com:moia-dev/scynamo.git")),
-    homepage := Some(url("https://github.com/moia-dev/scynamo")),
+    scmInfo := Some(ScmInfo(url("https://github.com/moia-oss/scynamo"), "scm:git@github.com:moia-oss/scynamo.git")),
+    homepage := Some(url("https://github.com/moia-oss/scynamo")),
+    versionScheme := Some("early-semver"),
     libraryDependencies ++= Seq(
       "org.scalatest"          %% "scalatest"               % "3.2.3"  % Test,
       "com.chuusai"            %% "shapeless"               % "2.3.3",
@@ -101,7 +102,7 @@ lazy val sonatypeSettings = {
     publishTo := sonatypePublishTo.value,
     sonatypeProfileName := organization.value,
     publishMavenStyle := true,
-    sonatypeProjectHosting := Some(GitHubHosting("moia-dev", "scynamo", "oss-support@moia.io")),
+    sonatypeProjectHosting := Some(GitHubHosting("moia-oss", "scynamo", "oss-support@moia.io")),
     credentials += Credentials(Path.userHome / ".sbt" / "sonatype_credential")
   )
 }
