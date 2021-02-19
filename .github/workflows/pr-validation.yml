@@ -32,7 +32,7 @@ jobs:
             ~/.cache/coursier/v1
           key: ${{ runner.os }}-sbt-ivy-cache-${{ hashFiles('**/build.sbt') }}-${{ hashFiles('**/plugins.sbt') }}-${{ hashFiles('**/build.properties') }}
       - name: Compile and test
-        run: sbt -batch "; docs/mdoc; +test; +doc; version"
+        run: sbt docs/mdoc +test +doc version +mimaReportBinaryIssues
 
   merge:
     name: Merge

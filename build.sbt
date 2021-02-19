@@ -5,7 +5,7 @@ lazy val root = project
   .settings(
     name := "scynamo",
     organization := "io.moia",
-    crossScalaVersions := List("2.13.4", "2.12.12"),
+    crossScalaVersions := List("2.13.4", "2.12.13"),
     scalacOptions ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, 12)) => scalacOptions_2_12
@@ -14,8 +14,9 @@ lazy val root = project
       }
     },
     licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0")),
-    scmInfo := Some(ScmInfo(url("https://github.com/moia-dev/scynamo"), "scm:git@github.com:moia-dev/scynamo.git")),
-    homepage := Some(url("https://github.com/moia-dev/scynamo")),
+    scmInfo := Some(ScmInfo(url("https://github.com/moia-oss/scynamo"), "scm:git@github.com:moia-oss/scynamo.git")),
+    homepage := Some(url("https://github.com/moia-oss/scynamo")),
+    versionScheme := Some("early-semver"),
     libraryDependencies ++= Seq(
       "org.scalatest"          %% "scalatest"               % "3.2.3"  % Test,
       "com.chuusai"            %% "shapeless"               % "2.3.3",
@@ -30,6 +31,7 @@ lazy val root = project
   .settings(sbtGitSettings)
   .settings(scalaFmtSettings)
   .settings(sonatypeSettings)
+  .settings(mimaSettings)
 
 lazy val docs = project
   .in(file("scynamo-docs"))
@@ -101,7 +103,11 @@ lazy val sonatypeSettings = {
     publishTo := sonatypePublishTo.value,
     sonatypeProfileName := organization.value,
     publishMavenStyle := true,
-    sonatypeProjectHosting := Some(GitHubHosting("moia-dev", "scynamo", "oss-support@moia.io")),
+    sonatypeProjectHosting := Some(GitHubHosting("moia-oss", "scynamo", "oss-support@moia.io")),
     credentials += Credentials(Path.userHome / ".sbt" / "sonatype_credential")
   )
 }
+
+lazy val mimaSettings = Seq(
+  mimaPreviousArtifacts := Set("io.moia" %% "scynamo" % "0.6.0")
+)
