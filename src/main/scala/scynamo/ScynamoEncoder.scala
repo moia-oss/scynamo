@@ -49,7 +49,8 @@ trait DefaultScynamoEncoderInstances extends ScynamoIterableEncoder {
 
   implicit val instantEncoder: ScynamoEncoder[Instant] = numberStringEncoder.contramap[Instant](_.toEpochMilli.toString)
 
-  implicit val instantTtlEncoder: ScynamoEncoder[Instant @@ TimeToLive] = numberStringEncoder.contramap[Instant @@ TimeToLive](_.getEpochSecond.toString)
+  implicit val instantTtlEncoder: ScynamoEncoder[Instant @@ TimeToLive] =
+    numberStringEncoder.contramap[Instant @@ TimeToLive](_.getEpochSecond.toString)
 
   implicit val uuidEncoder: ScynamoEncoder[UUID] = stringEncoder.contramap[UUID](_.toString)
 
