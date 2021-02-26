@@ -16,7 +16,7 @@ import scala.jdk.CollectionConverters._
 
 import shapeless.tag.@@
 
-sealed trait TTL
+sealed trait TimeToLive
 
 trait ScynamoEncoder[A] { self =>
   def encode(value: A): EitherNec[ScynamoEncodeError, AttributeValue]
@@ -49,7 +49,7 @@ trait DefaultScynamoEncoderInstances extends ScynamoIterableEncoder {
 
   implicit val instantEncoder: ScynamoEncoder[Instant] = numberStringEncoder.contramap[Instant](_.toEpochMilli.toString)
 
-  implicit val instantTtlEncoder: ScynamoEncoder[Instant @@ TTL] = numberStringEncoder.contramap[Instant @@ TTL](_.getEpochSecond.toString)
+  implicit val instantTtlEncoder: ScynamoEncoder[Instant @@ TimeToLive] = numberStringEncoder.contramap[Instant @@ TimeToLive](_.getEpochSecond.toString)
 
   implicit val uuidEncoder: ScynamoEncoder[UUID] = stringEncoder.contramap[UUID](_.toString)
 

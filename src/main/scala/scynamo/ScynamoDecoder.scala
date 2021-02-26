@@ -124,12 +124,12 @@ trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with Scynam
         result  <- convert(nstring, "Long")(_.toLong)
       } yield Instant.ofEpochMilli(result)
 
-  implicit val instantTtlDecoder: ScynamoDecoder[Instant @@ TTL] =
+  implicit val instantTtlDecoder: ScynamoDecoder[Instant @@ TimeToLive] =
     attributeValue =>
       for {
         nstring <- attributeValue.asEither(ScynamoType.Number)
         result  <- convert(nstring, "Long")(_.toLong)
-      } yield tag[TTL][Instant](Instant.ofEpochSecond(result))
+      } yield tag[TimeToLive][Instant](Instant.ofEpochSecond(result))
 
   implicit def seqDecoder[A: ScynamoDecoder]: ScynamoDecoder[scala.collection.immutable.Seq[A]] = iterableDecoder
 
