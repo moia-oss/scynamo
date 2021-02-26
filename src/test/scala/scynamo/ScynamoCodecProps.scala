@@ -8,6 +8,7 @@ import scynamo.wrapper.{ScynamoNumberSet, ScynamoStringSet}
 import shapeless.tag
 
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 import scala.concurrent.duration.Duration
 
@@ -47,7 +48,7 @@ class ScynamoCodecProps extends Properties("ScynamoCodec") {
   }
 
   propertyWithSeed("decode.encode === id (instant @@ ttl)", propertySeed) =
-    Prop.forAll(Gen.calendar.map(_.toInstant).map(tag[TTL][Instant](_))) { value =>
+    Prop.forAll(Gen.calendar.map(_.toInstant.truncatedTo(ChronoUnit.SECONDS)).map(tag[TimeToLive][Instant](_))) { value =>
       decodeAfterEncodeIsIdentity(value)
     }
 
