@@ -4,7 +4,7 @@
 
 1. Add the dependency:
 
-```scala
+```scala mdoc
 "io.moia" %% "scynamo" % "@VERSION@"
 ```
 
@@ -44,6 +44,14 @@ val result2 = for {
   decoded <- encoded.decode[User]
 } yield (encoded, decoded)
 ```
+
+5. (Optional) You can use a tagged type to use `Instant` for DynamoDB's _TimeToLive_ which is based on epoch seconds.
+```scala mdoc
+import scynamo._
+
+case class User(id: String, firstName: String, lastName: String, createdAt: Instant @@ TimeToLive)
+```
+Be aware that you lose millisecond precision.
 
 You can also look at the [minimal
 example](#minimal-example-using-the-aws-sdk) below that uses the AWS
