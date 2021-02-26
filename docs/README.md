@@ -4,7 +4,7 @@
 
 1. Add the dependency:
 
-```scala mdoc
+```scala
 "io.moia" %% "scynamo" % "@VERSION@"
 ```
 
@@ -48,6 +48,7 @@ val result2 = for {
 5. (Optional) You can use a tagged type to use `Instant` for DynamoDB's _TimeToLive_ which is based on epoch seconds.
 ```scala mdoc
 import scynamo._
+import shapeless.tag.@@
 
 case class User(id: String, firstName: String, lastName: String, createdAt: Instant @@ TimeToLive)
 ```
