@@ -1,7 +1,5 @@
 package scynamo
 
-import java.time.Instant
-import java.util.UUID
 import cats.data.EitherNec
 import cats.syntax.either._
 import cats.syntax.parallel._
@@ -9,14 +7,13 @@ import scynamo.StackFrame.{Index, MapKey}
 import scynamo.generic.auto.AutoDerivationUnlocked
 import scynamo.generic.{GenericScynamoEncoder, SemiautoDerivationEncoder}
 import shapeless._
+import shapeless.tag.@@
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
+import java.time.Instant
+import java.util.UUID
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.jdk.CollectionConverters._
-
-import shapeless.tag.@@
-
-sealed trait TimeToLive
 
 trait ScynamoEncoder[A] { self =>
   def encode(value: A): EitherNec[ScynamoEncodeError, AttributeValue]
