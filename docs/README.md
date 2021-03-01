@@ -45,7 +45,7 @@ val result2 = for {
 } yield (encoded, decoded)
 ```
 
-5. (Optional) You can use a tagged type to use `Instant` for DynamoDB's _TimeToLive_ which is based on epoch seconds.
+5. (Optional) You can use a tagged type to use `Instant` for DynamoDB's _TimeToLive_ which [is based on epoch seconds](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/time-to-live-ttl-before-you-start.html#time-to-live-ttl-before-you-start-formatting).
 ```scala mdoc
 import scynamo._
 import shapeless.tag.@@
