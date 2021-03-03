@@ -51,7 +51,7 @@ import scynamo._
 import shapeless.tag.@@
 import java.time.Instant
 
-case class ExpriringUser(id: String, firstName: String, lastName: String, createdAt: Instant @@ TimeToLive)
+case class ExpriringUser(id: String, firstName: String, lastName: String, expiresAt: Instant @@ TimeToLive)
 ```
 Be aware that you lose millisecond precision.
 
