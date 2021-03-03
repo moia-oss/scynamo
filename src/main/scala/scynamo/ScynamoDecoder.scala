@@ -3,7 +3,6 @@ package scynamo
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.TimeUnit
-
 import cats.data.{EitherNec, NonEmptyChain}
 import cats.syntax.either._
 import cats.syntax.parallel._
@@ -11,7 +10,8 @@ import cats.{Monad, SemigroupK}
 import scynamo.StackFrame.Index
 import scynamo.generic.auto.AutoDerivationUnlocked
 import scynamo.generic.{GenericScynamoDecoder, SemiautoDerivationDecoder}
-import shapeless.Lazy
+import shapeless.{tag, Lazy}
+import shapeless.tag.@@
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
 import scala.annotation.tailrec
@@ -123,6 +123,13 @@ trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with Scynam
         nstring <- attributeValue.asEither(ScynamoType.Number)
         result  <- convert(nstring, "Long")(_.toLong)
       } yield Instant.ofEpochMilli(result)
+
+  implicit val instantTtlDecoder: ScynamoDecoder[Instant @@ TimeToLive] =
+    attributeValue =>
+      for {
+        nstring <- attributeValue.asEither(ScynamoType.Number)
+        result  <- convert(nstring, "Long")(_.toLong)
+      } yield tag[TimeToLive][Instant](Instant.ofEpochSecond(result))
 
   implicit def seqDecoder[A: ScynamoDecoder]: ScynamoDecoder[scala.collection.immutable.Seq[A]] = iterableDecoder
 

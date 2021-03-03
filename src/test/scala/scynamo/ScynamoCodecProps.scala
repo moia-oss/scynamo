@@ -1,14 +1,15 @@
 package scynamo
 
-import java.time.Instant
-import java.util.UUID
-
 import org.scalacheck.Prop.propBoolean
 import org.scalacheck.{Gen, Prop, Properties}
 import scynamo.ScynamoCodecProps.Shape
 import scynamo.generic.semiauto._
 import scynamo.wrapper.{ScynamoNumberSet, ScynamoStringSet}
+import shapeless.tag
 
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+import java.util.UUID
 import scala.concurrent.duration.Duration
 
 class ScynamoCodecProps extends Properties("ScynamoCodec") {
@@ -45,6 +46,11 @@ class ScynamoCodecProps extends Properties("ScynamoCodec") {
   propertyWithSeed("decode.encode === id (instant)", propertySeed) = Prop.forAll(Gen.calendar.map(_.toInstant)) { value: Instant =>
     decodeAfterEncodeIsIdentity(value)
   }
+
+  propertyWithSeed("decode.encode === id (instant @@ ttl)", propertySeed) =
+    Prop.forAll(Gen.calendar.map(_.toInstant.truncatedTo(ChronoUnit.SECONDS)).map(tag[TimeToLive][Instant](_))) { value =>
+      decodeAfterEncodeIsIdentity(value)
+    }
 
   propertyWithSeed("decode.encode === id (seq)", propertySeed) = Prop.forAll { value: scala.collection.immutable.Seq[Int] =>
     decodeAfterEncodeIsIdentity(value)

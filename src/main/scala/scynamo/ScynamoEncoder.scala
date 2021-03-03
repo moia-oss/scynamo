@@ -1,8 +1,5 @@
 package scynamo
 
-import java.time.Instant
-import java.util.UUID
-
 import cats.data.EitherNec
 import cats.syntax.either._
 import cats.syntax.parallel._
@@ -10,8 +7,11 @@ import scynamo.StackFrame.{Index, MapKey}
 import scynamo.generic.auto.AutoDerivationUnlocked
 import scynamo.generic.{GenericScynamoEncoder, SemiautoDerivationEncoder}
 import shapeless._
+import shapeless.tag.@@
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
+import java.time.Instant
+import java.util.UUID
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.jdk.CollectionConverters._
 
@@ -45,6 +45,9 @@ trait DefaultScynamoEncoderInstances extends ScynamoIterableEncoder {
   implicit val booleanEncoder: ScynamoEncoder[Boolean] = value => Right(AttributeValue.builder().bool(value).build())
 
   implicit val instantEncoder: ScynamoEncoder[Instant] = numberStringEncoder.contramap[Instant](_.toEpochMilli.toString)
+
+  implicit val instantTtlEncoder: ScynamoEncoder[Instant @@ TimeToLive] =
+    numberStringEncoder.contramap[Instant @@ TimeToLive](_.getEpochSecond.toString)
 
   implicit val uuidEncoder: ScynamoEncoder[UUID] = stringEncoder.contramap[UUID](_.toString)
 
