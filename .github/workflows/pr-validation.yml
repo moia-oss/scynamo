@@ -35,14 +35,16 @@ jobs:
         run: sbt docs/mdoc +test +doc version +mimaReportBinaryIssues
 
   merge:
-    name: Merge
+    name: Merge dependency update
+    if: github.actor == 'moia-pipeline'
     needs:
       - scalaFmt
       - test
     runs-on: ubuntu-latest
     steps:
-      - name: Merge me!
-        uses: ridedott/merge-me-action@v1
+      - name: Merge PR
+        uses: desbo/merge-pr-action@v0
         with:
-          GITHUB_LOGIN: moia-pipeline
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ALLOWED_UPDATE: minor
+          MERGE_METHOD: squash
