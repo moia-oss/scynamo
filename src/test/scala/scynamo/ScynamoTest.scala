@@ -1,7 +1,5 @@
 package scynamo
 
-import cats.data.{EitherNec}
-
 import software.amazon.awssdk.services.dynamodb.model.{AttributeValue, GetItemResponse, QueryResponse}
 
 class ScynamoTest extends UnitTest {
@@ -37,12 +35,10 @@ class ScynamoTest extends UnitTest {
 
       val result = for {
         encodedInput <- input.encodedMap
-        response                                                             = QueryResponse.builder().items(encodedInput).build()
-        result: Iterable[EitherNec[ScynamoDecodeError, Map[String, String]]] = Scynamo.decodeQueryResponse[Map[String, String]](response)
-      } yield result.toSeq
-
-      print(s"Result is:  $result")
-      result should ===(Right(List(Right(input))))
+        response = QueryResponse.builder().items(encodedInput).build()
+        result <- Scynamo.decodeQueryResponse[Map[String, String]](response)
+      } yield result
+      result should ===(Right(List(input)))
     }
   }
 }
