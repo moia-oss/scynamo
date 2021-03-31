@@ -1,10 +1,10 @@
 package scynamo
 
-import cats.data.{EitherNec, EitherNel, NonEmptyChain}
+import cats.data.EitherNec
 import software.amazon.awssdk.services.dynamodb.model.{GetItemResponse, QueryResponse}
 
 import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
-import cats.data.EitherNel
+import cats.implicits._
 
 object Scynamo extends ScynamoFunctions
 
@@ -15,12 +15,8 @@ trait ScynamoFunctions {
     else
       Right(None)
 
-  def decodeQueryResponse[A: ObjectScynamoDecoder](
-      response: QueryResponse
-  ): EitherNel[ScynamoDecodeError, Seq[EitherNec[ScynamoDecodeError, A]]] =
-    if (response.hasItems) {
-      val decodedValues = response.items().map(ObjectScynamoDecoder[A].decodeMap(_)).toSeq
-      Right(decodedValues)
-    } else
-      Right(Seq.empty)
+  def decodeQueryResponse[A: ObjectScynamoDecoder](response: QueryResponse): Iterable[EitherNec[ScynamoDecodeError, A]] =
+    if (response.hasItems)
+      response.items().map(ObjectScynamoDecoder[A].decodeMap(_))
+    else Seq.empty
 }
