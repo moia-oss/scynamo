@@ -6,14 +6,21 @@ class ScynamoTest extends UnitTest {
   "Scynamo" should {
     "return None if the get item response has no item" in {
       val response = GetItemResponse.builder().build()
+      val result = for {
+        result <- Scynamo.decodeGetItemResponse[Map[String, AttributeValue]](response)
+      } yield result
 
-      Scynamo.decodeGetItemResponse[Map[String, AttributeValue]](response)
+      result should ===(Right(None))
     }
 
-    "return an empty Sequence if the query response has no items" in {
+    "return an empty List if the query response has no items" in {
       val response = QueryResponse.builder().build()
 
-      Scynamo.decodeQueryResponse[Map[String, AttributeValue]](response)
+      val result = for {
+        result <- Scynamo.decodeQueryResponse[Map[String, AttributeValue]](response)
+      } yield result
+
+      result should ===(Right(List.empty))
     }
 
     "return the decoded result if it has an item that is well formed" in {
