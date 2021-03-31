@@ -38,14 +38,16 @@ class ScynamoTest extends UnitTest {
 
     "return the decoded result if it has multiple items that are well formed" in {
       import scynamo.syntax.encoder._
-      val input = Map("foo" -> "bar", "Miami" -> "Ibiza")
+      val input1 = Map("foo" -> "bar")
+      val input2 = Map("Miami" -> "Ibiza")
 
       val result = for {
-        encodedInput <- input.encodedMap
-        response = QueryResponse.builder().items(encodedInput).build()
+        encodedInput1 <- input1.encodedMap
+        encodedInput2 <- input2.encodedMap
+        response = QueryResponse.builder().items(encodedInput1, encodedInput2).build()
         result <- Scynamo.decodeQueryResponse[Map[String, String]](response)
       } yield result
-      result should ===(Right(List(input)))
+      result should ===(Right(List(input1, input2)))
     }
   }
 }
