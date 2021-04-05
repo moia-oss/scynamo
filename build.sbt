@@ -24,7 +24,7 @@ lazy val root = project
       "org.typelevel"          %% "cats-core"               % "2.4.2",
       "org.typelevel"          %% "cats-testkit-scalatest"  % "2.1.2"  % Test,
       "org.scalacheck"         %% "scalacheck"              % "1.15.3" % Test,
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.4.2",
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.4.3",
       "org.scala-lang.modules" %% "scala-java8-compat"      % "0.9.1"
     )
   )
