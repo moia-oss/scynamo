@@ -109,5 +109,5 @@ lazy val sonatypeSettings = {
 }
 
 lazy val mimaSettings = Seq(
-  mimaPreviousArtifacts := Set("io.moia" %% "scynamo" % "0.7.0")
+  mimaPreviousArtifacts := Set.empty
 )

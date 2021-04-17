@@ -7,6 +7,7 @@ import scynamo.StackFrame.{Index, MapKey}
 import scynamo.generic.auto.AutoDerivationUnlocked
 import scynamo.generic.{GenericScynamoEncoder, SemiautoDerivationEncoder}
 import shapeless._
+import shapeless.labelled.FieldType
 import shapeless.tag.@@
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
@@ -115,6 +116,9 @@ trait DefaultScynamoEncoderInstances extends ScynamoIterableEncoder {
     case Left(value)  => Left(value)
     case Right(value) => ScynamoEncoder[A].encode(value)
   }
+
+  implicit def fieldEncoder[K, V](implicit V: Lazy[ScynamoEncoder[V]]): ScynamoEncoder[FieldType[K, V]] =
+    field => V.value.encode(field)
 }
 
 trait ScynamoIterableEncoder extends LowestPrioAutoEncoder {
