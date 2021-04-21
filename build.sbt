@@ -19,8 +19,8 @@ lazy val root = project
     versionScheme := Some("early-semver"),
     libraryDependencies ++= Seq(
       "org.scalatest"          %% "scalatest"               % "3.2.7"  % Test,
-      "com.chuusai"            %% "shapeless"               % "2.3.3",
-      "software.amazon.awssdk"  % "dynamodb"                % "2.16.34",
+      "com.chuusai"            %% "shapeless"               % "2.3.4",
+      "software.amazon.awssdk"  % "dynamodb"                % "2.16.43",
       "org.typelevel"          %% "cats-core"               % "2.5.0",
       "org.typelevel"          %% "cats-testkit-scalatest"  % "2.1.3"  % Test,
       "org.scalacheck"         %% "scalacheck"              % "1.15.3" % Test,
@@ -109,5 +109,5 @@ lazy val sonatypeSettings = {
 }
 
 lazy val mimaSettings = Seq(
-  mimaPreviousArtifacts := Set("io.moia" %% "scynamo" % "0.7.0")
+  mimaPreviousArtifacts := Set.empty
 )

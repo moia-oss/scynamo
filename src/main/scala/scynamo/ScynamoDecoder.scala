@@ -1,8 +1,5 @@
 package scynamo
 
-import java.time.Instant
-import java.util.UUID
-import java.util.concurrent.TimeUnit
 import cats.data.{EitherNec, NonEmptyChain}
 import cats.syntax.either._
 import cats.syntax.parallel._
@@ -10,10 +7,14 @@ import cats.{Monad, SemigroupK}
 import scynamo.StackFrame.Index
 import scynamo.generic.auto.AutoDerivationUnlocked
 import scynamo.generic.{GenericScynamoDecoder, SemiautoDerivationDecoder}
-import shapeless.{tag, Lazy}
+import shapeless.labelled.{field, FieldType}
 import shapeless.tag.@@
+import shapeless.{tag, Lazy}
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
+import java.time.Instant
+import java.util.UUID
+import java.util.concurrent.TimeUnit
 import scala.annotation.tailrec
 import scala.collection.compat._
 import scala.concurrent.duration.{Duration, FiniteDuration}
@@ -41,7 +42,7 @@ object StackFrame {
   case class Custom(name: String) extends StackFrame
 }
 
-trait ScynamoDecoder[A] extends ScynamoDecoderFunctions {
+trait ScynamoDecoder[A] extends ScynamoDecoderFunctions { self =>
   def decode(attributeValue: AttributeValue): EitherNec[ScynamoDecodeError, A]
 
   def map[B](f: A => B): ScynamoDecoder[B] =
@@ -57,6 +58,11 @@ trait ScynamoDecoder[A] extends ScynamoDecoderFunctions {
     value => f(decode(value))
 
   def defaultValue: Option[A] = None
+
+  def withDefault(value: A): ScynamoDecoder[A] = new ScynamoDecoder[A] {
+    override def decode(attributeValue: AttributeValue) = self.decode(attributeValue)
+    override val defaultValue                           = Some(value)
+  }
 }
 
 object ScynamoDecoder extends DefaultScynamoDecoderInstances {
@@ -167,7 +173,16 @@ trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with Scynam
           .map(_.toMap)
       }
 
-  implicit val attributeValueDecoder: ScynamoDecoder[AttributeValue] = attributeValue => Right(attributeValue)
+  implicit val attributeValueDecoder: ScynamoDecoder[AttributeValue] =
+    attributeValue => Right(attributeValue)
+
+  implicit def fieldDecoder[K, V](implicit V: Lazy[ScynamoDecoder[V]]): ScynamoDecoder[FieldType[K, V]] =
+    new ScynamoDecoder[FieldType[K, V]] {
+      override def decode(attributeValue: AttributeValue) =
+        V.value.decode(attributeValue).map(field[K][V])
+      override lazy val defaultValue =
+        V.value.defaultValue.map(field[K][V])
+    }
 }
 
 trait ScynamoIterableDecoder extends LowestPrioAutoDecoder {

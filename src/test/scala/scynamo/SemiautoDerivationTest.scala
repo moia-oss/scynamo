@@ -6,6 +6,8 @@ import scynamo.Mixed.{CaseClass, CaseObject}
 import scynamo.generic.{ScynamoDerivationOpts, ScynamoSealedTraitOpts}
 import scynamo.generic.semiauto._
 import scynamo.syntax.all._
+import shapeless.Witness
+import shapeless.labelled.FieldType
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
 class SemiautoDerivationTest extends UnitTest {
@@ -111,6 +113,30 @@ class SemiautoDerivationTest extends UnitTest {
         """
           |deriveScynamoEnumCodec[Mixed]
           |""".stripMargin shouldNot compile
+      }
+    }
+
+    "a custom field type encoder or decoder is provided" should {
+      "override the default one" in {
+        final case class Apple(variety: String, ripe: Boolean)
+        object Apple {
+          val variety = Witness(Symbol("variety"))
+          val ripe    = Witness(Symbol("ripe"))
+
+          implicit val varietyEncoder: ScynamoEncoder[FieldType[variety.T, String]] =
+            ScynamoEncoder.fieldEncoder(ScynamoEncoder.stringEncoder.contramap[String](_.trim))
+
+          implicit val ripeDecoder: ScynamoDecoder[FieldType[ripe.T, Boolean]] =
+            ScynamoDecoder.fieldDecoder(ScynamoDecoder.booleanDecoder.withDefault(true))
+
+          implicit val codec: ObjectScynamoCodec[Apple] =
+            ObjectScynamoCodec.deriveScynamoCodec[Apple]
+        }
+
+        val encoded = Apple("\tGranny Smith\n", ripe = false).encoded.flatMap(_.decode[Apple])
+        val decoded = Map("variety" -> "Pink Lady".encodedUnsafe).encodedUnsafe.decode[Apple]
+        encoded should ===(Right(Apple("Granny Smith", ripe = false)))
+        decoded should ===(Right(Apple("Pink Lady", ripe = true)))
       }
     }
   }
