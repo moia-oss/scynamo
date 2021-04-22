@@ -1,7 +1,7 @@
 package scynamo
 
 import cats.data.EitherNec
-import software.amazon.awssdk.services.dynamodb.model.{GetItemResponse, QueryResponse}
+import software.amazon.awssdk.services.dynamodb.model.{GetItemResponse, QueryResponse, ScanResponse}
 import cats.syntax.all._
 
 import scala.jdk.CollectionConverters._
@@ -16,4 +16,8 @@ trait ScynamoFunctions {
 
   def decodeQueryResponse[A: ObjectScynamoDecoder](response: QueryResponse): EitherNec[ScynamoDecodeError, List[A]] =
     response.items().asScala.toList.traverse(ObjectScynamoDecoder[A].decodeMap(_))
+
+  def decodeScanResponse[A: ObjectScynamoDecoder](response: ScanResponse): EitherNec[ScynamoDecodeError, List[A]] =
+    response.items().asScala.toList.traverse(ObjectScynamoDecoder[A].decodeMap(_))
+
 }

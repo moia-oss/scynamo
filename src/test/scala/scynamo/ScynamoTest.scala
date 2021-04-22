@@ -1,6 +1,6 @@
 package scynamo
 
-import software.amazon.awssdk.services.dynamodb.model.{AttributeValue, GetItemResponse, QueryResponse}
+import software.amazon.awssdk.services.dynamodb.model.{AttributeValue, GetItemResponse, QueryResponse, ScanResponse}
 
 class ScynamoTest extends UnitTest {
   "Scynamo" should {
@@ -23,6 +23,16 @@ class ScynamoTest extends UnitTest {
       result should ===(Right(List.empty))
     }
 
+    "return an empty List if the scan response has no items" in {
+      val response = ScanResponse.builder().build()
+
+      val result = for {
+        result <- Scynamo.decodeScanResponse[Map[String, AttributeValue]](response)
+      } yield result
+
+      result should ===(Right(List.empty))
+    }
+
     "return the decoded result if it has an item that is well formed" in {
       import scynamo.syntax.encoder._
       val input = Map("foo" -> "bar")
@@ -36,7 +46,7 @@ class ScynamoTest extends UnitTest {
       result should ===(Right(Some(input)))
     }
 
-    "return the decoded result if it has multiple items that are well formed" in {
+    "return the decoded query result if it has multiple items that are well formed" in {
       import scynamo.syntax.encoder._
       val input1 = Map("foo" -> "bar")
       val input2 = Map("Miami" -> "Ibiza")
@@ -46,6 +56,20 @@ class ScynamoTest extends UnitTest {
         encodedInput2 <- input2.encodedMap
         response = QueryResponse.builder().items(encodedInput1, encodedInput2).build()
         result <- Scynamo.decodeQueryResponse[Map[String, String]](response)
+      } yield result
+      result should ===(Right(List(input1, input2)))
+    }
+
+    "return the decoded scan result if it has multiple items that are well formed" in {
+      import scynamo.syntax.encoder._
+      val input1 = Map("foo" -> "bar")
+      val input2 = Map("Miami" -> "Ibiza")
+
+      val result = for {
+        encodedInput1 <- input1.encodedMap
+        encodedInput2 <- input2.encodedMap
+        response = ScanResponse.builder().items(encodedInput1, encodedInput2).build()
+        result <- Scynamo.decodeScanResponse[Map[String, String]](response)
       } yield result
       result should ===(Right(List(input1, input2)))
     }
