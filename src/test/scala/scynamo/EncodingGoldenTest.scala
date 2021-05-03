@@ -27,7 +27,7 @@ class EncodingGoldenTest extends UnitTest {
       val result = input.encoded.map(_.toString)
 
       val expected =
-        "AttributeValue(M={testOption=AttributeValue(N=42), testInstant=AttributeValue(N=0), testString=AttributeValue(S=abc), testFiniteDuration=AttributeValue(N=1000000000), testTraitList=AttributeValue(L=[AttributeValue(M={_SCYNAMO_DEFAULT_DISCRIMINATOR_=AttributeValue(S=TraitObject)}), AttributeValue(M={_SCYNAMO_DEFAULT_DISCRIMINATOR_=AttributeValue(S=TraitCaseClass), testFloat=AttributeValue(N=21.21)})]), testUuid=AttributeValue(S=1c4b009c-ee7e-4a47-a401-36b468ef7d1e), testMap=AttributeValue(M={1c4b009c-ee7e-4a47-a401-36b468ef7d1e=AttributeValue(S=foo)}), testDuration=AttributeValue(N=1000000000)})"
+        "AttributeValue(M={testOption=AttributeValue(N=42), testInstant=AttributeValue(N=0), testString=AttributeValue(S=abc), testFiniteDuration=AttributeValue(N=1000000000), testTraitList=AttributeValue(L=[AttributeValue(M={_SCYNAMO_DEFAULT_DISCRIMINATOR_=AttributeValue(S=TraitObject)}), AttributeValue(M={testFloat=AttributeValue(N=21.21), _SCYNAMO_DEFAULT_DISCRIMINATOR_=AttributeValue(S=TraitCaseClass)})]), testUuid=AttributeValue(S=1c4b009c-ee7e-4a47-a401-36b468ef7d1e), testMap=AttributeValue(M={1c4b009c-ee7e-4a47-a401-36b468ef7d1e=AttributeValue(S=foo)}), testDuration=AttributeValue(N=1000000000)})"
 
       result shouldBe Right(expected)
     }
