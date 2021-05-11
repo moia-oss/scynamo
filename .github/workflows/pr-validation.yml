@@ -33,18 +33,3 @@ jobs:
           key: ${{ runner.os }}-sbt-ivy-cache-${{ hashFiles('**/build.sbt') }}-${{ hashFiles('**/plugins.sbt') }}-${{ hashFiles('**/build.properties') }}
       - name: Compile and test
         run: sbt docs/mdoc +test +doc version +mimaReportBinaryIssues
-
-  merge:
-    name: Merge dependency update
-    if: github.actor == 'moia-pipeline'
-    needs:
-      - scalaFmt
-      - test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Merge PR
-        uses: desbo/merge-pr-action@v0
-        with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ALLOWED_UPDATE: minor
-          MERGE_METHOD: squash
