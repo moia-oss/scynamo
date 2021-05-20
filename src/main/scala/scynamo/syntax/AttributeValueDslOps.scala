@@ -1,19 +1,21 @@
-package scynamo.syntax.attributevalue
+package scynamo.syntax
 
-import java.util
-
-import cats.syntax.either._
 import cats.data.NonEmptyChain
+import cats.syntax.either._
 import scynamo.ScynamoDecodeError.TypeMismatch
 import scynamo.{ScynamoDecodeError, ScynamoType}
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
+import java.util
+
+object attributevalue extends AttributeValueDsl
+
 trait AttributeValueDsl {
   implicit def toAttributeValueOps(attributeValue: AttributeValue): AttributeValueDslOps = new AttributeValueDslOps(attributeValue)
 }
 
-class AttributeValueDslOps(val attributeValue: AttributeValue) extends AnyVal {
+class AttributeValueDslOps(val attributeValue: AttributeValue) extends AttributeValueDsl {
   private[this] def nulOpt: Option[Boolean]                        = Option(attributeValue.nul).map(_.booleanValue)
   private[this] def bOpt: Option[SdkBytes]                         = Option(attributeValue.b)
   private[this] def nOpt: Option[String]                           = Option(attributeValue.n)

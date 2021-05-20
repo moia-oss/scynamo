@@ -1,10 +1,10 @@
-package scynamo.syntax.encoder
-
-import java.util
+package scynamo.syntax
 
 import cats.data.EitherNec
 import scynamo.{ObjectScynamoEncoder, ScynamoEncodeError, ScynamoEncoder}
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
+
+import java.util
 
 class ScynamoEncoderDslOps[A](val value: A) extends AnyVal {
   def encoded(implicit encoder: ScynamoEncoder[A]): EitherNec[ScynamoEncodeError, AttributeValue] = encoder.encode(value)
@@ -27,3 +27,5 @@ class ScynamoEncoderDslOps[A](val value: A) extends AnyVal {
 trait ScynamoEncoderDsl {
   implicit def toScynamoEncoderDslOps[A: ScynamoEncoder](value: A): ScynamoEncoderDslOps[A] = new ScynamoEncoderDslOps(value)
 }
+
+object encoder extends ScynamoEncoderDsl
