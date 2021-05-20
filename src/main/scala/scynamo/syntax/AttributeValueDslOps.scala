@@ -3,6 +3,7 @@ package scynamo.syntax
 import cats.data.NonEmptyChain
 import cats.syntax.either._
 import scynamo.ScynamoDecodeError.TypeMismatch
+import scynamo.syntax.all.toAttributeValueOps
 import scynamo.{ScynamoDecodeError, ScynamoType}
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
@@ -15,7 +16,7 @@ trait AttributeValueDsl {
   implicit def toAttributeValueOps(attributeValue: AttributeValue): AttributeValueDslOps = new AttributeValueDslOps(attributeValue)
 }
 
-class AttributeValueDslOps(val attributeValue: AttributeValue) extends AttributeValueDsl {
+class AttributeValueDslOps(val attributeValue: AttributeValue) extends AnyVal {
   private[this] def nulOpt: Option[Boolean]                        = Option(attributeValue.nul).map(_.booleanValue)
   private[this] def bOpt: Option[SdkBytes]                         = Option(attributeValue.b)
   private[this] def nOpt: Option[String]                           = Option(attributeValue.n)
