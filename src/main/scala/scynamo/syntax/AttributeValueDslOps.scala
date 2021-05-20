@@ -1,13 +1,16 @@
-package scynamo.syntax.attributevalue
+package scynamo.syntax
 
-import java.util
-
-import cats.syntax.either._
 import cats.data.NonEmptyChain
+import cats.syntax.either._
 import scynamo.ScynamoDecodeError.TypeMismatch
+import scynamo.syntax.all.toAttributeValueOps
 import scynamo.{ScynamoDecodeError, ScynamoType}
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
+
+import java.util
+
+object attributevalue extends AttributeValueDsl
 
 trait AttributeValueDsl {
   implicit def toAttributeValueOps(attributeValue: AttributeValue): AttributeValueDslOps = new AttributeValueDslOps(attributeValue)

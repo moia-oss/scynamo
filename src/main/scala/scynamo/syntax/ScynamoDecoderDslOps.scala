@@ -1,4 +1,4 @@
-package scynamo.syntax.decoder
+package scynamo.syntax
 
 import cats.data.EitherNec
 import scynamo.{ObjectScynamoDecoder, ScynamoDecodeError, ScynamoDecoder}
@@ -19,3 +19,5 @@ trait ScynamoDecoderDsl {
   implicit def toObjectScynamoDecoderDsl(attributeValueMap: java.util.Map[String, AttributeValue]): ObjectScynamoDecoderDslOps =
     new ObjectScynamoDecoderDslOps(attributeValueMap)
 }
+
+object decoder extends ScynamoDecoderDsl

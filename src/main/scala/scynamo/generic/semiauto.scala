@@ -1,9 +1,9 @@
 package scynamo.generic
 
-import scynamo.{ObjectScynamoCodec, ObjectScynamoDecoder, ObjectScynamoEncoder, ScynamoDecoder, ScynamoEncoder, ScynamoEnumCodec}
+import scynamo._
 import shapeless.Lazy
 
-package object semiauto extends SemiautoDerivation
+object semiauto extends SemiautoDerivation
 
 trait SemiautoDerivation extends SemiautoDerivationEncoder with SemiautoDerivationDecoder with SemiautoDerivationCodec
 
