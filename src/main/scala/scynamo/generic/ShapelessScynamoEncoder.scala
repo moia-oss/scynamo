@@ -1,13 +1,10 @@
 package scynamo.generic
 
-import java.util
-import java.util.Collections
-
 import cats.data.EitherNec
 import cats.syntax.either._
 import cats.syntax.parallel._
 import scynamo.StackFrame.{Attr, Case}
-import scynamo.{ScynamoEncodeError, ScynamoEncoder}
+import scynamo.{ScynamoEncodeError, ScynamoEncoder, StackFrame}
 import shapeless._
 import shapeless.labelled._
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
@@ -19,27 +16,23 @@ trait ShapelessScynamoEncoder[Base, A] {
 object ShapelessScynamoEncoder extends EncoderHListInstances with EncoderCoproductInstances
 
 trait EncoderHListInstances {
-  implicit def deriveHNil[Base]: ShapelessScynamoEncoder[Base, HNil] = _ => Right(Collections.emptyMap())
+  implicit def deriveHNil[Base]: ShapelessScynamoEncoder[Base, HNil] =
+    _ => Right(new java.util.HashMap)
 
   implicit def deriveHCons[Base, K <: Symbol, V, T <: HList](implicit
       key: Witness.Aux[K],
       sv: ScynamoEncoder[FieldType[K, V]],
       st: ShapelessScynamoEncoder[Base, T],
       opts: ScynamoDerivationOpts[Base] = ScynamoDerivationOpts.default[Base]
-  ): ShapelessScynamoEncoder[Base, FieldType[K, V] :: T] =
-    value => {
-      val fieldName = opts.transform(key.value.name)
-
-      val encodedHead = sv.encode(value.head).leftMap(_.map(_.push(Attr(fieldName))))
-      val encodedTail = st.encodeMap(value.tail)
-
-      (encodedHead, encodedTail).parMapN { case (head, tail) =>
-        val hm = new util.HashMap[String, AttributeValue]()
-        hm.putAll(tail)
-        hm.put(fieldName, head)
-        hm
-      }
+  ): ShapelessScynamoEncoder[Base, FieldType[K, V] :: T] = { value =>
+    val fieldName   = opts.transform(key.value.name)
+    val encodedHead = StackFrame.push(sv.encode(value.head), Attr(fieldName))
+    val encodedTail = st.encodeMap(value.tail)
+    (encodedHead, encodedTail).parMapN { case (head, tail) =>
+      if (!head.nul) tail.put(fieldName, head)
+      tail
     }
+  }
 }
 
 trait EncoderCoproductInstances {
@@ -52,14 +45,14 @@ trait EncoderCoproductInstances {
       st: ShapelessScynamoEncoder[Base, T],
       opts: ScynamoSealedTraitOpts[Base] = ScynamoSealedTraitOpts.default[Base]
   ): ShapelessScynamoEncoder[Base, FieldType[K, V] :+: T] = {
-    case Inl(l) =>
+    case Inl(left) =>
       val name = opts.transform(key.value.name)
-      sv.value.encode(l).leftMap(x => x.map(_.push(Case(name)))).map(_.m()).map { vs =>
-        val hm = new util.HashMap[String, AttributeValue]()
-        hm.putAll(vs)
-        hm.put(opts.discriminator, AttributeValue.builder().s(name).build())
-        hm
+      StackFrame.push(sv.value.encode(left), Case(name)).map { encoded =>
+        val attr = new java.util.HashMap[String, AttributeValue](encoded.m())
+        attr.put(opts.discriminator, AttributeValue.builder.s(name).build())
+        attr
       }
-    case Inr(r) => st.encodeMap(r)
+    case Inr(right) =>
+      st.encodeMap(right)
   }
 }

@@ -1,6 +1,7 @@
 package scynamo
 
-import software.amazon.awssdk.services.dynamodb.model.{AttributeValue, GetItemResponse, QueryResponse, ScanResponse}
+import software.amazon.awssdk.services.dynamodb.model._
+import scynamo.syntax.encoder._
 
 class ScynamoTest extends UnitTest {
   "Scynamo" should {
@@ -34,7 +35,6 @@ class ScynamoTest extends UnitTest {
     }
 
     "return the decoded result if it has an item that is well formed" in {
-      import scynamo.syntax.encoder._
       val input = Map("foo" -> "bar")
 
       val result = for {
@@ -47,7 +47,6 @@ class ScynamoTest extends UnitTest {
     }
 
     "return the decoded query result if it has multiple items that are well formed" in {
-      import scynamo.syntax.encoder._
       val input1 = Map("foo" -> "bar")
       val input2 = Map("Miami" -> "Ibiza")
 
@@ -61,7 +60,6 @@ class ScynamoTest extends UnitTest {
     }
 
     "return the decoded scan result if it has multiple items that are well formed" in {
-      import scynamo.syntax.encoder._
       val input1 = Map("foo" -> "bar")
       val input2 = Map("Miami" -> "Ibiza")
 

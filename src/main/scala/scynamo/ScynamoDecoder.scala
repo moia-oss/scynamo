@@ -40,6 +40,14 @@ object StackFrame {
   case class Index(value: Int)    extends StackFrame
   case class MapKey[A](value: A)  extends StackFrame
   case class Custom(name: String) extends StackFrame
+
+  private[scynamo] def push[A](
+      encoded: EitherNec[ScynamoEncodeError, A],
+      frame: => StackFrame
+  ): EitherNec[ScynamoEncodeError, A] = {
+    lazy val stackFrame = frame
+    encoded.leftMap(_.map(_.push(stackFrame)))
+  }
 }
 
 trait ScynamoDecoder[A] extends ScynamoDecoderFunctions { self =>

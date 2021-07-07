@@ -2,8 +2,9 @@ package scynamo
 
 import cats.Eq
 import cats.data.EitherNec
-import cats.laws.discipline.{MonadTests, SemigroupKTests}
+import cats.laws.discipline.{ContravariantTests, MonadTests, SemigroupKTests}
 import cats.laws.discipline.arbitrary._
+import cats.syntax.all._
 import cats.tests.{StrictCatsEquality, TestSettings}
 import org.scalacheck.rng.Seed
 import org.scalacheck.{Arbitrary, Cogen, Gen}
@@ -95,7 +96,7 @@ class ScynamoInstancesTest extends AnyFunSuite with Checkers with FunSuiteDiscip
     cause <- Arbitrary.arbitrary[Option[Throwable]]
   } yield ScynamoDecodeError.ConversionError(input, to, cause, ErrorStack.empty)
 
-  val generalErrorGen: Gen[ScynamoDecodeError.GeneralError] = for {
+  val generalDecodeErrorGen: Gen[ScynamoDecodeError.GeneralError] = for {
     message <- Arbitrary.arbitrary[String]
     cause   <- Arbitrary.arbitrary[Option[Throwable]]
   } yield ScynamoDecodeError.GeneralError(message, cause, ErrorStack.empty)
@@ -107,9 +108,20 @@ class ScynamoInstancesTest extends AnyFunSuite with Checkers with FunSuiteDiscip
       invalidCoproductCaseMapGen,
       invalidCoproductCaseAttrGen,
       conversionErrorGen,
-      generalErrorGen
+      generalDecodeErrorGen
     )
   )
+
+  implicit val invalidEmptyValueGen: Gen[ScynamoEncodeError.InvalidEmptyValue] =
+    for (tpe <- scynamoTypeGen) yield ScynamoEncodeError.InvalidEmptyValue(tpe, ErrorStack.empty)
+
+  implicit val generalEncodeErrorGen: Gen[ScynamoEncodeError.GeneralError] = for {
+    message <- Arbitrary.arbitrary[String]
+    cause   <- Arbitrary.arbitrary[Option[Throwable]]
+  } yield ScynamoEncodeError.GeneralError(message, cause, ErrorStack.empty)
+
+  implicit val arbitraryEncodeError: Arbitrary[ScynamoEncodeError] =
+    Arbitrary(Gen.oneOf(invalidEmptyValueGen, generalEncodeErrorGen))
 
   implicit def arbitraryDecoder[A: Arbitrary]: Arbitrary[ScynamoDecoder[A]] =
     Arbitrary(Arbitrary.arbitrary[AttributeValue => EitherNec[ScynamoDecodeError, A]].map(f => f(_)))
@@ -117,7 +129,19 @@ class ScynamoInstancesTest extends AnyFunSuite with Checkers with FunSuiteDiscip
   implicit def arbitraryObjectDecoder[A: Arbitrary]: Arbitrary[ObjectScynamoDecoder[A]] =
     Arbitrary(Arbitrary.arbitrary[AttributeMap => EitherNec[ScynamoDecodeError, A]].map(f => f(_)))
 
+  implicit def arbitraryEncoder[A: Cogen]: Arbitrary[ScynamoEncoder[A]] =
+    Arbitrary(Arbitrary.arbitrary[A => EitherNec[ScynamoEncodeError, AttributeValue]].map(ScynamoEncoder.instance))
+
+  implicit def arbitraryObjectEncoder[A: Cogen]: Arbitrary[ObjectScynamoEncoder[A]] = Arbitrary(
+    Arbitrary.arbitrary[A => EitherNec[ScynamoEncodeError, java.util.Map[String, AttributeValue]]].map(ObjectScynamoEncoder.instance)
+  )
+
+  implicit def arbitraryKeyEncoder[A: Cogen]: Arbitrary[ScynamoKeyEncoder[A]] =
+    Arbitrary(Arbitrary.arbitrary[A => EitherNec[ScynamoEncodeError, String]].map(ScynamoKeyEncoder.instance))
+
   implicit val decodeErrorEq: Eq[ScynamoDecodeError] = Eq.fromUniversalEquals
+  implicit val encodeErrorEq: Eq[ScynamoEncodeError] = Eq.fromUniversalEquals
+  implicit val attrValueEq: Eq[AttributeValue]       = Eq.fromUniversalEquals
 
   def probabilisticEq[A: Arbitrary](f: A => Boolean): Boolean = {
     val params = Gen.Parameters.default.withSize(checkConfiguration.sizeRange.value)
@@ -128,16 +152,31 @@ class ScynamoInstancesTest extends AnyFunSuite with Checkers with FunSuiteDiscip
       .forall(f)
   }
 
-  implicit def decoderEq[A: Eq]: Eq[ScynamoDecoder[A]] = (x, y) =>
+  implicit def decoderEq[A: Eq]: Eq[ScynamoDecoder[A]] = Eq.instance { (x, y) =>
     probabilisticEq[AttributeValue](value => x.decode(value) === y.decode(value))
+  }
 
-  implicit def objectDecoderEq[A: Eq]: Eq[ObjectScynamoDecoder[A]] = (x, y) =>
-    probabilisticEq[AttributeMap](attributes => x.decodeMap(attributes) === y.decodeMap(attributes))
+  implicit def objectDecoderEq[A: Eq]: Eq[ObjectScynamoDecoder[A]] =
+    decoderEq[A].narrow
+
+  implicit def encoderEq[A: Arbitrary]: Eq[ScynamoEncoder[A]] = Eq.instance { (x, y) =>
+    probabilisticEq[A](value => x.encode(value) === y.encode(value))
+  }
+
+  implicit def objectEncoderEq[A: Arbitrary]: Eq[ObjectScynamoEncoder[A]] =
+    encoderEq[A].narrow
+
+  implicit def keyEncoderEq[A: Arbitrary]: Eq[ScynamoKeyEncoder[A]] = Eq.instance { (x, y) =>
+    probabilisticEq[A](value => x.encode(value) === y.encode(value))
+  }
 
   checkAll("Monad[ScynamoDecoder]", MonadTests[ScynamoDecoder].monad[Int, Int, Int])
   checkAll("Monad[ObjectScynamoDecoder]", MonadTests[ObjectScynamoDecoder].monad[Int, Int, Int])
   checkAll("SemigroupK[ScynamoDecoder]", SemigroupKTests[ScynamoDecoder].semigroupK[Int])
   checkAll("SemigroupK[ObjectScynamoDecoder]", SemigroupKTests[ObjectScynamoDecoder].semigroupK[Int])
+  checkAll("Contravariant[ScynamoEncoder]", ContravariantTests[ScynamoEncoder].contravariant[Int, Int, Int])
+  checkAll("Contravariant[ObjectScynamoEncoder]", ContravariantTests[ObjectScynamoEncoder].contravariant[Int, Int, Int])
+  checkAll("Contravariant[ScynamoKeyEncoder]", ContravariantTests[ScynamoKeyEncoder].contravariant[Int, Int, Int])
 }
 
 object ScynamoInstancesTest {
