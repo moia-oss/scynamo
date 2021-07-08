@@ -1,5 +1,7 @@
 package scynamo
 
+import cats.data.{EitherNec, NonEmptyChain}
+import cats.syntax.all._
 import cats.{Eq, Show}
 import scynamo.ScynamoType.TypeInvalidIfEmpty
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
@@ -15,6 +17,39 @@ object ScynamoError {
     case error: ScynamoEncodeError => Show[ScynamoEncodeError].show(error)
     case error: ScynamoDecodeError => Show[ScynamoDecodeError].show(error)
   }
+}
+
+case class ErrorStack(frames: List[StackFrame]) {
+  def push(frame: StackFrame): ErrorStack = ErrorStack(frame +: frames)
+
+  override def toString: String =
+    frames.mkString("ErrorStack(", " -> ", ")")
+}
+
+object ErrorStack {
+  val empty: ErrorStack = ErrorStack(List.empty)
+}
+
+sealed trait StackFrame extends Product with Serializable
+object StackFrame {
+  case class Attr(name: String)   extends StackFrame
+  case class Case(name: String)   extends StackFrame
+  case class Enum(name: String)   extends StackFrame
+  case class Index(value: Int)    extends StackFrame
+  case class MapKey[A](value: A)  extends StackFrame
+  case class Custom(name: String) extends StackFrame
+
+  private[scynamo] def encoding[A](
+      encoded: EitherNec[ScynamoEncodeError, A],
+      frame: StackFrame
+  ): EitherNec[ScynamoEncodeError, A] =
+    encoded.leftMap(encoding(_, frame))
+
+  private[scynamo] def encoding[A](
+      errors: NonEmptyChain[ScynamoEncodeError],
+      frame: StackFrame
+  ): NonEmptyChain[ScynamoEncodeError] =
+    errors.map(_.push(frame))
 }
 
 sealed abstract class ScynamoEncodeError extends ScynamoError {

@@ -21,39 +21,6 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.jdk.CollectionConverters._
 import scala.util.control.NonFatal
 
-case class ErrorStack(frames: List[StackFrame]) {
-  def push(frame: StackFrame): ErrorStack = ErrorStack(frame +: frames)
-
-  override def toString: String =
-    frames.mkString("ErrorStack(", " -> ", ")")
-}
-
-object ErrorStack {
-  val empty: ErrorStack = ErrorStack(List.empty)
-}
-
-sealed trait StackFrame extends Product with Serializable
-object StackFrame {
-  case class Attr(name: String)   extends StackFrame
-  case class Case(name: String)   extends StackFrame
-  case class Enum(name: String)   extends StackFrame
-  case class Index(value: Int)    extends StackFrame
-  case class MapKey[A](value: A)  extends StackFrame
-  case class Custom(name: String) extends StackFrame
-
-  private[scynamo] def encoding[A](
-      encoded: EitherNec[ScynamoEncodeError, A],
-      frame: StackFrame
-  ): EitherNec[ScynamoEncodeError, A] =
-    encoded.leftMap(encoding(_, frame))
-
-  private[scynamo] def encoding[A](
-      errors: NonEmptyChain[ScynamoEncodeError],
-      frame: StackFrame
-  ): NonEmptyChain[ScynamoEncodeError] =
-    errors.map(_.push(frame))
-}
-
 trait ScynamoDecoder[A] extends ScynamoDecoderFunctions { self =>
   def decode(attributeValue: AttributeValue): EitherNec[ScynamoDecodeError, A]
 
