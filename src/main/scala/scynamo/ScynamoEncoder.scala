@@ -28,13 +28,6 @@ object ScynamoEncoder extends DefaultScynamoEncoderInstances {
 
   // SAM syntax generates anonymous classes because of non-abstract methods like `contramap`.
   private[scynamo] def instance[A](f: A => EitherNec[ScynamoEncodeError, AttributeValue]): ScynamoEncoder[A] = f(_)
-
-  // Ignore `nul` for efficiency and GSI support.
-  private[scynamo] def attributes(kvs: IndexedSeq[(String, AttributeValue)]) = {
-    val attr = new java.util.HashMap[String, AttributeValue](kvs.size)
-    for ((k, v) <- kvs) if (!v.nul) attr.put(k, v)
-    attr
-  }
 }
 
 trait DefaultScynamoEncoderInstances extends ScynamoIterableEncoder {
@@ -121,27 +114,35 @@ trait DefaultScynamoEncoderInstances extends ScynamoIterableEncoder {
       var allErrors  = Chain.empty[ScynamoEncodeError]
       val attrValues = new java.util.HashMap[String, AttributeValue](kvs.size)
       kvs.foreachEntry { (k, v) =>
-        (key.encode(k), value.encode(v)).parTupled match {
-          case Right((k, attr)) => if (!attr.nul) attrValues.put(k, attr)
-          case Left(errors)     => allErrors ++= StackFrame.encoding(errors, MapKey(k)).toChain
+        (key.encode(k), value.encode(v)) match {
+          case (Right(k), Right(attr)) =>
+            // Omit `nul` for efficiency and GSI support (see https://github.com/aws/aws-sdk-go/issues/1803)
+            if (!attr.nul) attrValues.put(k, attr)
+          case (Left(errors), Right(_)) =>
+            allErrors ++= StackFrame.encoding(errors, MapKey(k)).toChain
+          case (Right(_), Left(errors)) =>
+            allErrors ++= StackFrame.encoding(errors, MapKey(k)).toChain
+          case (Left(kErrors), Left(vErrors)) =>
+            allErrors ++= StackFrame.encoding(kErrors ++ vErrors, MapKey(k)).toChain
         }
       }
 
       NonEmptyChain.fromChain(allErrors).toLeft(AttributeValue.builder.m(attrValues).build())
     }
 
-  implicit val attributeValueEncoder: ScynamoEncoder[AttributeValue] = { value =>
-    import scynamo.syntax.attributevalue._
+  implicit val attributeValueEncoder: ScynamoEncoder[AttributeValue] =
+    ScynamoEncoder.instance { value =>
+      import scynamo.syntax.attributevalue._
 
-    def nonEmpty[A](typ: ScynamoType.Aux[java.util.List[A]] with ScynamoType.TypeInvalidIfEmpty) =
-      if (value.asOption(typ).exists(!_.isEmpty)) Right(value)
-      else Either.leftNec(ScynamoEncodeError.invalidEmptyValue(typ))
+      def nonEmpty[A](typ: ScynamoType.Aux[java.util.List[A]] with ScynamoType.TypeInvalidIfEmpty) =
+        if (value.asOption(typ).exists(!_.isEmpty)) Right(value)
+        else Either.leftNec(ScynamoEncodeError.invalidEmptyValue(typ))
 
-    if (value.hasSs) nonEmpty(ScynamoType.StringSet)
-    else if (value.hasNs) nonEmpty(ScynamoType.NumberSet)
-    else if (value.hasBs) nonEmpty(ScynamoType.BinarySet)
-    else Right(value)
-  }
+      if (value.hasSs) nonEmpty(ScynamoType.StringSet)
+      else if (value.hasNs) nonEmpty(ScynamoType.NumberSet)
+      else if (value.hasBs) nonEmpty(ScynamoType.BinarySet)
+      else Right(value)
+    }
 
   implicit def eitherScynamoErrorEncoder[A](implicit right: ScynamoEncoder[A]): ScynamoEncoder[EitherNec[ScynamoEncodeError, A]] =
     ScynamoEncoder.instance {
@@ -190,6 +191,7 @@ object ObjectScynamoEncoder extends SemiautoDerivationEncoder {
       val attrValues = new java.util.HashMap[String, AttributeValue](kvs.size)
       kvs.foreachEntry { (k, v) =>
         value.encode(v) match {
+          // Omit `nul` for efficiency and GSI support (see https://github.com/aws/aws-sdk-go/issues/1803)
           case Right(attr)  => if (!attr.nul) attrValues.put(k, attr)
           case Left(errors) => allErrors ++= StackFrame.encoding(errors, MapKey(k)).toChain
         }
