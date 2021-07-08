@@ -43,11 +43,15 @@ object StackFrame {
 
   private[scynamo] def push[A](
       encoded: EitherNec[ScynamoEncodeError, A],
-      frame: => StackFrame
-  ): EitherNec[ScynamoEncodeError, A] = {
-    lazy val stackFrame = frame
-    encoded.leftMap(_.map(_.push(stackFrame)))
-  }
+      frame: StackFrame
+  ): EitherNec[ScynamoEncodeError, A] =
+    encoded.leftMap(push(_, frame))
+
+  private[scynamo] def push[A](
+      errors: NonEmptyChain[ScynamoEncodeError],
+      frame: StackFrame
+  ): NonEmptyChain[ScynamoEncodeError] =
+    errors.map(_.push(frame))
 }
 
 trait ScynamoDecoder[A] extends ScynamoDecoderFunctions { self =>

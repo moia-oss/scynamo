@@ -1,7 +1,7 @@
 package scynamo
 
 import cats.Contravariant
-import cats.data.EitherNec
+import cats.data.{Chain, EitherNec, NonEmptyChain}
 import cats.syntax.all._
 import scynamo.StackFrame.{Index, MapKey}
 import scynamo.generic.auto.AutoDerivationUnlocked
@@ -12,7 +12,8 @@ import shapeless.tag.@@
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
 import java.time.Instant
-import java.util.UUID
+import java.util.{Collections, UUID}
+import scala.collection.compat._
 import scala.collection.immutable.Seq
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
@@ -80,10 +81,15 @@ trait DefaultScynamoEncoderInstances extends ScynamoIterableEncoder {
     stringEncoder.contramap(_.toString)
 
   implicit def seqEncoder[A](implicit element: ScynamoEncoder[A]): ScynamoEncoder[Seq[A]] =
-    ScynamoEncoder.instance {
-      _.zipWithIndex
-        .parTraverse { case (x, i) => StackFrame.push(element.encode(x), Index(i)) }
-        .map(xs => AttributeValue.builder.l(xs: _*).build())
+    ScynamoEncoder.instance { xs =>
+      var allErrors  = Chain.empty[ScynamoEncodeError]
+      val attrValues = List.newBuilder[AttributeValue]
+      for ((x, i) <- xs.iterator.zipWithIndex) element.encode(x) match {
+        case Right(attr)  => attrValues += attr
+        case Left(errors) => allErrors ++= StackFrame.push(errors, Index(i)).toChain
+      }
+
+      NonEmptyChain.fromChain(allErrors).toLeft(AttributeValue.builder.l(attrValues.result(): _*).build())
     }
 
   implicit def listEncoder[A: ScynamoEncoder]: ScynamoEncoder[List[A]] =
@@ -111,10 +117,17 @@ trait DefaultScynamoEncoderInstances extends ScynamoIterableEncoder {
     numberStringEncoder.contramap(_.toNanos.toString)
 
   implicit def mapEncoder[A, B](implicit key: ScynamoKeyEncoder[A], value: ScynamoEncoder[B]): ScynamoEncoder[Map[A, B]] =
-    ScynamoEncoder.instance {
-      _.toVector
-        .parTraverse { case (k, v) => StackFrame.push((key.encode(k), value.encode(v)).parTupled, MapKey(k)) }
-        .map(kvs => AttributeValue.builder.m(ScynamoEncoder.attributes(kvs)).build())
+    ScynamoEncoder.instance { kvs =>
+      var allErrors  = Chain.empty[ScynamoEncodeError]
+      val attrValues = new java.util.HashMap[String, AttributeValue](kvs.size)
+      kvs.foreachEntry { (k, v) =>
+        (key.encode(k), value.encode(v)).parTupled match {
+          case Right((k, attr)) => if (!attr.nul) attrValues.put(k, attr)
+          case Left(errors)     => allErrors ++= StackFrame.push(errors, MapKey(k)).toChain
+        }
+      }
+
+      NonEmptyChain.fromChain(allErrors).toLeft(AttributeValue.builder.m(attrValues).build())
     }
 
   implicit val attributeValueEncoder: ScynamoEncoder[AttributeValue] = { value =>
@@ -172,10 +185,17 @@ object ObjectScynamoEncoder extends SemiautoDerivationEncoder {
   }
 
   implicit def mapEncoder[A](implicit value: ScynamoEncoder[A]): ObjectScynamoEncoder[Map[String, A]] =
-    instance {
-      _.toVector
-        .parTraverse { case (k, v) => value.encode(v).tupleLeft(k) }
-        .map(ScynamoEncoder.attributes)
+    instance { kvs =>
+      var allErrors  = Chain.empty[ScynamoEncodeError]
+      val attrValues = new java.util.HashMap[String, AttributeValue](kvs.size)
+      kvs.foreachEntry { (k, v) =>
+        value.encode(v) match {
+          case Right(attr)  => if (!attr.nul) attrValues.put(k, attr)
+          case Left(errors) => allErrors ++= StackFrame.push(errors, MapKey(k)).toChain
+        }
+      }
+
+      NonEmptyChain.fromChain(allErrors).toLeft(Collections.unmodifiableMap(attrValues))
     }
 }
 
