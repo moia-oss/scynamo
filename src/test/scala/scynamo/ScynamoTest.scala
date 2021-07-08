@@ -1,7 +1,10 @@
 package scynamo
 
-import software.amazon.awssdk.services.dynamodb.model._
 import scynamo.syntax.encoder._
+import software.amazon.awssdk.services.dynamodb.model._
+
+import java.util.UUID
+import scala.jdk.CollectionConverters._
 
 class ScynamoTest extends UnitTest {
   "Scynamo" should {
@@ -70,6 +73,22 @@ class ScynamoTest extends UnitTest {
         result <- Scynamo.decodeScanResponse[Map[String, String]](response)
       } yield result
       result should ===(Right(List(input1, input2)))
+    }
+
+    "omit empty keys from a map with UUID keys" in {
+      val customer1 = UUID.randomUUID()
+      val customer2 = UUID.randomUUID()
+      val emails    = Map(customer1 -> Some("john.doe@moia.io"), customer2 -> None)
+      val result    = emails.encoded.map(_.m.keySet.asScala.toSet)
+      result should ===(Right(Set(customer1.toString)))
+    }
+
+    "omit empty keys from a map with String keys" in {
+      val customer1 = UUID.randomUUID().toString
+      val customer2 = UUID.randomUUID().toString
+      val emails    = Map(customer1 -> Some("john.doe@moia.io"), customer2 -> None)
+      val result    = emails.encodedMap.map(_.keySet.asScala.toSet)
+      result should ===(Right(Set(customer1)))
     }
   }
 }

@@ -3,7 +3,7 @@ package scynamo
 import cats.data.EitherNec
 import cats.syntax.either._
 import org.scalatest.Inside
-import scynamo.ScynamoEncoderTest.{Foo, Foo2}
+import scynamo.ScynamoEncoderTest.{Foo, Foo2, Snake}
 import scynamo.StackFrame.{Attr, Case, Index, MapKey}
 import scynamo.wrapper.{ScynamoBinarySet, ScynamoNumberSet, ScynamoStringSet}
 import software.amazon.awssdk.core.SdkBytes
@@ -128,12 +128,27 @@ class ScynamoEncoderTest extends UnitTest {
         Either.leftNec(ScynamoEncodeError.invalidEmptyValue(ScynamoType.BinarySet))
       )
     }
+
+    "omit empty fields from case classes" in {
+      ScynamoEncoder[Snake[Int]]
+        .encode(Snake(1, None))
+        .map(attr => Option(attr.m.get("tail"))) should ===(Right(None))
+
+      ObjectScynamoEncoder[Snake[Int]]
+        .encodeMap(Snake(1, Some(Snake(2, None))))
+        .map(attrs => Option(attrs.get("tail").m.get("tail"))) should ===(Right(None))
+    }
   }
 }
 
 object ScynamoEncoderTest {
-  case class Foo(i: Int)
+  case class Snake[A](head: A, tail: Option[Snake[A]])
+  object Snake {
+    implicit def codec[A: ScynamoCodec]: ObjectScynamoCodec[Snake[A]] =
+      scynamo.generic.semiauto.deriveScynamoCodec[Snake[A]]
+  }
 
+  case class Foo(i: Int)
   object Foo {
     import scynamo.syntax.attributevalue._
     val prefix = "this-is-a-"
@@ -149,7 +164,6 @@ object ScynamoEncoderTest {
   }
 
   case class Foo2(i: Int)
-
   object Foo2 {
     import scynamo.syntax.attributevalue._
     val prefix = "this-is-a-"
