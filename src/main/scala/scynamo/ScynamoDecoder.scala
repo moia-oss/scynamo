@@ -1,12 +1,12 @@
 package scynamo
 
-import cats.data.{EitherNec, NonEmptyChain}
+import cats.data.{Chain, EitherNec, NonEmptyChain}
 import cats.syntax.either._
-import cats.syntax.parallel._
 import cats.{Monad, SemigroupK}
-import scynamo.StackFrame.Index
+import scynamo.StackFrame.{Index, MapKey}
 import scynamo.generic.auto.AutoDerivationUnlocked
 import scynamo.generic.{GenericScynamoDecoder, SemiautoDerivationDecoder}
+import scynamo.syntax.attributevalue._
 import shapeless.labelled.{field, FieldType}
 import shapeless.tag.@@
 import shapeless.{tag, Lazy}
@@ -17,24 +17,24 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 import scala.annotation.tailrec
 import scala.collection.compat._
+import scala.collection.immutable.Seq
 import scala.concurrent.duration.{Duration, FiniteDuration}
-import scala.jdk.CollectionConverters._
 import scala.util.control.NonFatal
 
 trait ScynamoDecoder[A] extends ScynamoDecoderFunctions { self =>
   def decode(attributeValue: AttributeValue): EitherNec[ScynamoDecodeError, A]
 
   def map[B](f: A => B): ScynamoDecoder[B] =
-    value => decode(value).map(f)
+    ScynamoDecoder.instance(decode(_).map(f))
 
   def flatMap[B](f: A => ScynamoDecoder[B]): ScynamoDecoder[B] =
-    value => decode(value).flatMap(f(_).decode(value))
+    ScynamoDecoder.instance(value => decode(value).flatMap(f(_).decode(value)))
 
   def orElse[AA >: A](other: ScynamoDecoder[A]): ScynamoDecoder[AA] =
-    value => decode(value).orElse(other.decode(value))
+    ScynamoDecoder.instance(value => decode(value).orElse(other.decode(value)))
 
   def transform[B](f: EitherNec[ScynamoDecodeError, A] => EitherNec[ScynamoDecodeError, B]): ScynamoDecoder[B] =
-    value => f(decode(value))
+    ScynamoDecoder.instance(value => f(decode(value)))
 
   def defaultValue: Option[A] = None
 
@@ -48,11 +48,14 @@ object ScynamoDecoder extends DefaultScynamoDecoderInstances {
   def apply[A](implicit instance: ScynamoDecoder[A]): ScynamoDecoder[A] = instance
 
   def const[A](value: A): ScynamoDecoder[A] =
-    _ => Right(value)
+    instance(_ => Right(value))
+
+  // SAM syntax generates anonymous classes because of non-abstract methods like `defaultValue`.
+  private[scynamo] def instance[A](f: AttributeValue => EitherNec[ScynamoDecodeError, A]): ScynamoDecoder[A] = f(_)
 }
 
 trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with ScynamoIterableDecoder {
-  import scynamo.syntax.attributevalue._
+  private val rightNone = Right(None)
 
   implicit val catsInstances: Monad[ScynamoDecoder] with SemigroupK[ScynamoDecoder] =
     new Monad[ScynamoDecoder] with SemigroupK[ScynamoDecoder] {
@@ -73,87 +76,97 @@ trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with Scynam
             case Left(errors)    => Left(errors)
           }
 
-        go(a, _)
+        ScynamoDecoder.instance(go(a, _))
       }
 
       override def combineK[A](x: ScynamoDecoder[A], y: ScynamoDecoder[A]): ScynamoDecoder[A] =
         x.orElse(y)
     }
 
-  implicit val stringDecoder: ScynamoDecoder[String] = attributeValue => attributeValue.asEither(ScynamoType.String)
+  implicit val stringDecoder: ScynamoDecoder[String] =
+    ScynamoDecoder.instance(_.asEither(ScynamoType.String))
 
   implicit val intDecoder: ScynamoDecoder[Int] =
-    attributeValue => attributeValue.asEither(ScynamoType.Number).flatMap(s => convert(s, "Int")(_.toInt))
+    ScynamoDecoder.instance(_.asEither(ScynamoType.Number).flatMap(convert(_, "Int")(_.toInt)))
 
   implicit val longDecoder: ScynamoDecoder[Long] =
-    attributeValue => attributeValue.asEither(ScynamoType.Number).flatMap(s => convert(s, "Long")(_.toLong))
+    ScynamoDecoder.instance(_.asEither(ScynamoType.Number).flatMap(convert(_, "Long")(_.toLong)))
 
   implicit val bigIntDecoder: ScynamoDecoder[BigInt] =
-    attributeValue => attributeValue.asEither(ScynamoType.Number).flatMap(s => convert(s, "BigInt")(BigInt(_)))
+    ScynamoDecoder.instance(_.asEither(ScynamoType.Number).flatMap(convert(_, "BigInt")(BigInt.apply)))
 
   implicit val floatDecoder: ScynamoDecoder[Float] =
-    attributeValue => attributeValue.asEither(ScynamoType.Number).flatMap(s => convert(s, "Float")(_.toFloat))
+    ScynamoDecoder.instance(_.asEither(ScynamoType.Number).flatMap(convert(_, "Float")(_.toFloat)))
 
   implicit val doubleDecoder: ScynamoDecoder[Double] =
-    attributeValue => attributeValue.asEither(ScynamoType.Number).flatMap(s => convert(s, "Double")(_.toDouble))
+    ScynamoDecoder.instance(_.asEither(ScynamoType.Number).flatMap(convert(_, "Double")(_.toDouble)))
 
   implicit val bigDecimalDecoder: ScynamoDecoder[BigDecimal] =
-    attributeValue => attributeValue.asEither(ScynamoType.Number).flatMap(s => convert(s, "BigDecimal")(BigDecimal(_)))
+    ScynamoDecoder.instance(_.asEither(ScynamoType.Number).flatMap(convert(_, "BigDecimal")(BigDecimal.apply)))
 
-  implicit val booleanDecoder: ScynamoDecoder[Boolean] = attributeValue => attributeValue.asEither(ScynamoType.Bool)
+  implicit val booleanDecoder: ScynamoDecoder[Boolean] =
+    ScynamoDecoder.instance(_.asEither(ScynamoType.Bool))
 
   implicit val instantDecoder: ScynamoDecoder[Instant] =
-    attributeValue =>
+    ScynamoDecoder.instance { attr =>
       for {
-        nstring <- attributeValue.asEither(ScynamoType.Number)
-        result  <- convert(nstring, "Long")(_.toLong)
+        number <- attr.asEither(ScynamoType.Number)
+        result <- convert(number, "Long")(_.toLong)
       } yield Instant.ofEpochMilli(result)
-
-  implicit val instantTtlDecoder: ScynamoDecoder[Instant @@ TimeToLive] =
-    attributeValue =>
-      for {
-        nstring <- attributeValue.asEither(ScynamoType.Number)
-        result  <- convert(nstring, "Long")(_.toLong)
-      } yield tag[TimeToLive][Instant](Instant.ofEpochSecond(result))
-
-  implicit def seqDecoder[A: ScynamoDecoder]: ScynamoDecoder[scala.collection.immutable.Seq[A]] = iterableDecoder
-
-  implicit def listDecoder[A: ScynamoDecoder]: ScynamoDecoder[List[A]] = iterableDecoder
-
-  implicit def vectorDecoder[A: ScynamoDecoder]: ScynamoDecoder[Vector[A]] = iterableDecoder
-
-  implicit def setDecoder[A: ScynamoDecoder]: ScynamoDecoder[Set[A]] = iterableDecoder
-
-  implicit def optionDecoder[A: ScynamoDecoder]: ScynamoDecoder[Option[A]] =
-    new ScynamoDecoder[Option[A]] {
-      override def decode(attributeValue: AttributeValue): EitherNec[ScynamoDecodeError, Option[A]] =
-        if (attributeValue.nul()) Right(None) else ScynamoDecoder[A].decode(attributeValue).map(Some(_))
-
-      override def defaultValue: Option[Option[A]] = Some(None)
     }
 
-  implicit val finiteDurationDecoder: ScynamoDecoder[FiniteDuration] = longDecoder.map(Duration.fromNanos)
+  implicit val instantTtlDecoder: ScynamoDecoder[Instant @@ TimeToLive] =
+    ScynamoDecoder.instance { attr =>
+      for {
+        number <- attr.asEither(ScynamoType.Number)
+        result <- convert(number, "Long")(_.toLong)
+      } yield tag[TimeToLive][Instant](Instant.ofEpochSecond(result))
+    }
 
-  implicit val durationDecoder: ScynamoDecoder[Duration] = longDecoder.map(n => Duration(n, TimeUnit.NANOSECONDS))
+  implicit def seqDecoder[A: ScynamoDecoder]: ScynamoDecoder[Seq[A]]       = iterableDecoder
+  implicit def listDecoder[A: ScynamoDecoder]: ScynamoDecoder[List[A]]     = iterableDecoder
+  implicit def vectorDecoder[A: ScynamoDecoder]: ScynamoDecoder[Vector[A]] = iterableDecoder
+  implicit def setDecoder[A: ScynamoDecoder]: ScynamoDecoder[Set[A]]       = iterableDecoder
 
-  implicit val uuidDecoder: ScynamoDecoder[UUID] = attributeValue =>
-    attributeValue.asEither(ScynamoType.String).flatMap(s => convert(s, "UUID")(UUID.fromString))
+  implicit def optionDecoder[A](implicit element: ScynamoDecoder[A]): ScynamoDecoder[Option[A]] =
+    new ScynamoDecoder[Option[A]] {
+      override val defaultValue: Option[Option[A]] = Some(None)
+      override def decode(attributeValue: AttributeValue): EitherNec[ScynamoDecodeError, Option[A]] =
+        if (attributeValue.nul) rightNone else element.decode(attributeValue).map(Some.apply)
+    }
 
-  implicit def mapDecoder[A, B](implicit
-      keyDecoder: ScynamoKeyDecoder[A],
-      valueDecoder: ScynamoDecoder[B]
-  ): ScynamoDecoder[Map[A, B]] =
-    attributeValue =>
-      attributeValue.asEither(ScynamoType.Map).flatMap { javaMap =>
-        javaMap.asScala.toVector.zipWithIndex
-          .parTraverse { case ((key, value), i) =>
-            (keyDecoder.decode(key), valueDecoder.decode(value)).parMapN(_ -> _).leftMap(_.map(_.push(Index(i))))
-          }
-          .map(_.toMap)
+  implicit val finiteDurationDecoder: ScynamoDecoder[FiniteDuration] =
+    longDecoder.map(Duration.fromNanos)
+
+  implicit val durationDecoder: ScynamoDecoder[Duration] =
+    longDecoder.map(Duration(_, TimeUnit.NANOSECONDS))
+
+  implicit val uuidDecoder: ScynamoDecoder[UUID] =
+    ScynamoDecoder.instance(_.asEither(ScynamoType.String).flatMap(convert(_, "UUID")(UUID.fromString)))
+
+  implicit def mapDecoder[A, B](implicit key: ScynamoKeyDecoder[A], value: ScynamoDecoder[B]): ScynamoDecoder[Map[A, B]] =
+    ScynamoDecoder.instance(_.asEither(ScynamoType.Map).flatMap { attributes =>
+      var allErrors = Chain.empty[ScynamoDecodeError]
+      val allValues = Map.newBuilder[A, B]
+
+      attributes.forEach { (k, v) =>
+        (key.decode(k), value.decode(v)) match {
+          case (Right(k), Right(v)) =>
+            allValues += k -> v
+          case (Left(errors), Right(_)) =>
+            allErrors ++= StackFrame.decoding(errors, MapKey(k)).toChain
+          case (Right(_), Left(errors)) =>
+            allErrors ++= StackFrame.decoding(errors, MapKey(k)).toChain
+          case (Left(kErrors), Left(vErrors)) =>
+            allErrors ++= StackFrame.decoding(kErrors ++ vErrors, MapKey(k)).toChain
+        }
       }
 
+      NonEmptyChain.fromChain(allErrors).toLeft(allValues.result())
+    })
+
   implicit val attributeValueDecoder: ScynamoDecoder[AttributeValue] =
-    attributeValue => Right(attributeValue)
+    ScynamoDecoder.instance(Right.apply)
 
   implicit def fieldDecoder[K, V](implicit V: Lazy[ScynamoDecoder[V]]): ScynamoDecoder[FieldType[K, V]] =
     new ScynamoDecoder[FieldType[K, V]] {
@@ -166,21 +179,24 @@ trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with Scynam
 
 trait ScynamoIterableDecoder extends LowestPrioAutoDecoder {
   import scynamo.syntax.attributevalue._
-  def iterableDecoder[A: ScynamoDecoder, C[_] <: Iterable[A], X](implicit factory: Factory[A, C[A]]): ScynamoDecoder[C[A]] =
-    attributeValue =>
-      attributeValue.asEither(ScynamoType.List).flatMap { theList =>
-        val builder = factory.newBuilder
-        var elems   = Either.rightNec[ScynamoDecodeError, builder.type](builder)
-        var i       = 0
 
-        theList.forEach { elem =>
-          val decoded = ScynamoDecoder[A].decode(elem).leftMap(_.map(_.push(Index(i))))
-          elems = (elems, decoded).parMapN((builder, dec) => builder += dec)
-          i += 1
+  def iterableDecoder[A, C[x] <: Iterable[x]](implicit element: ScynamoDecoder[A], factory: Factory[A, C[A]]): ScynamoDecoder[C[A]] =
+    ScynamoDecoder.instance(_.asEither(ScynamoType.List).flatMap { attributes =>
+      var allErrors = Chain.empty[ScynamoDecodeError]
+      val allValues = factory.newBuilder
+      var i         = 0
+
+      while (i < attributes.size()) {
+        element.decode(attributes.get(i)) match {
+          case Right(value) => allValues += value
+          case Left(errors) => allErrors ++= StackFrame.decoding(errors, Index(i)).toChain
         }
 
-        elems.map(_.result())
+        i += 1
       }
+
+      NonEmptyChain.fromChain(allErrors).toLeft(allValues.result())
+    })
 }
 
 trait LowestPrioAutoDecoder {
@@ -209,17 +225,22 @@ trait ObjectScynamoDecoder[A] extends ScynamoDecoder[A] {
     attributeValue.asEither(ScynamoType.Map).flatMap(decodeMap)
 
   override def map[B](f: A => B): ObjectScynamoDecoder[B] =
-    attributes => decodeMap(attributes).map(f)
+    ObjectScynamoDecoder.instance(decodeMap(_).map(f))
 
   override def transform[B](f: EitherNec[ScynamoDecodeError, A] => EitherNec[ScynamoDecodeError, B]): ObjectScynamoDecoder[B] =
-    attributes => f(decodeMap(attributes))
+    ObjectScynamoDecoder.instance(attributes => f(decodeMap(attributes)))
 }
 
 object ObjectScynamoDecoder extends ScynamoDecoderFunctions with SemiautoDerivationDecoder {
   def apply[A](implicit instance: ObjectScynamoDecoder[A]): ObjectScynamoDecoder[A] = instance
 
+  // SAM syntax generates anonymous classes because of non-abstract methods like `defaultValue`.
+  private[scynamo] def instance[A](
+      f: java.util.Map[String, AttributeValue] => EitherNec[ScynamoDecodeError, A]
+  ): ObjectScynamoDecoder[A] = f(_)
+
   def const[A](value: A): ObjectScynamoDecoder[A] =
-    _ => Right(value)
+    instance(_ => Right(value))
 
   implicit val catsInstances: Monad[ObjectScynamoDecoder] with SemigroupK[ObjectScynamoDecoder] =
     new Monad[ObjectScynamoDecoder] with SemigroupK[ObjectScynamoDecoder] {
@@ -230,7 +251,7 @@ object ObjectScynamoDecoder extends ScynamoDecoderFunctions with SemiautoDerivat
         ObjectScynamoDecoder.const(x)
 
       override def flatMap[A, B](fa: ObjectScynamoDecoder[A])(f: A => ObjectScynamoDecoder[B]): ObjectScynamoDecoder[B] =
-        attributes => fa.decodeMap(attributes).flatMap(f(_).decodeMap(attributes))
+        instance(attributes => fa.decodeMap(attributes).flatMap(f(_).decodeMap(attributes)))
 
       override def tailRecM[A, B](a: A)(f: A => ObjectScynamoDecoder[Either[A, B]]): ObjectScynamoDecoder[B] = {
         @tailrec def go(a: A, attributes: java.util.Map[String, AttributeValue]): EitherNec[ScynamoDecodeError, B] =
@@ -240,15 +261,27 @@ object ObjectScynamoDecoder extends ScynamoDecoderFunctions with SemiautoDerivat
             case Left(errors)    => Left(errors)
           }
 
-        go(a, _)
+        instance(go(a, _))
       }
 
       override def combineK[A](x: ObjectScynamoDecoder[A], y: ObjectScynamoDecoder[A]): ObjectScynamoDecoder[A] =
-        attributes => x.decodeMap(attributes).orElse(y.decodeMap(attributes))
+        instance(attributes => x.decodeMap(attributes).orElse(y.decodeMap(attributes)))
     }
 
-  implicit def mapDecoder[A](implicit valueDecoder: ScynamoDecoder[A]): ObjectScynamoDecoder[Map[String, A]] =
-    javaMap => javaMap.asScala.toVector.parTraverse { case (key, value) => valueDecoder.decode(value).map(key -> _) }.map(_.toMap)
+  implicit def mapDecoder[A](implicit value: ScynamoDecoder[A]): ObjectScynamoDecoder[Map[String, A]] =
+    instance { attributes =>
+      var allErrors = Chain.empty[ScynamoDecodeError]
+      val allValues = Map.newBuilder[String, A]
+
+      attributes.forEach { (k, v) =>
+        value.decode(v) match {
+          case Right(value) => allValues += k -> value
+          case Left(errors) => allErrors ++= StackFrame.decoding(errors, MapKey(k)).toChain
+        }
+      }
+
+      NonEmptyChain.fromChain(allErrors).toLeft(allValues.result())
+    }
 }
 
 trait ScynamoKeyDecoder[A] {
@@ -258,11 +291,12 @@ trait ScynamoKeyDecoder[A] {
 object ScynamoKeyDecoder {
   def apply[A](implicit decoder: ScynamoKeyDecoder[A]): ScynamoKeyDecoder[A] = decoder
 
-  implicit val stringKeyDecoder: ScynamoKeyDecoder[String] = s => Right(s)
+  // SAM syntax generates anonymous classes because of non-abstract methods like `defaultValue`.
+  private[scynamo] def instance[A](f: String => EitherNec[ScynamoDecodeError, A]): ScynamoKeyDecoder[A] = f(_)
 
-  implicit val uuidKeyDecoder: ScynamoKeyDecoder[UUID] = s => {
-    val result = Either.catchOnly[IllegalArgumentException](UUID.fromString(s))
+  implicit val stringKeyDecoder: ScynamoKeyDecoder[String] =
+    instance(Right.apply)
 
-    result.leftMap(e => NonEmptyChain.one(ScynamoDecodeError.conversionError(s"$s", "UUID", Some(e))))
-  }
+  implicit val uuidKeyDecoder: ScynamoKeyDecoder[UUID] =
+    instance(ScynamoDecoder.convert(_, "UUID")(UUID.fromString))
 }
