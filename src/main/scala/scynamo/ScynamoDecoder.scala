@@ -41,13 +41,13 @@ object StackFrame {
   case class MapKey[A](value: A)  extends StackFrame
   case class Custom(name: String) extends StackFrame
 
-  private[scynamo] def push[A](
+  private[scynamo] def encoding[A](
       encoded: EitherNec[ScynamoEncodeError, A],
       frame: StackFrame
   ): EitherNec[ScynamoEncodeError, A] =
-    encoded.leftMap(push(_, frame))
+    encoded.leftMap(encoding(_, frame))
 
-  private[scynamo] def push[A](
+  private[scynamo] def encoding[A](
       errors: NonEmptyChain[ScynamoEncodeError],
       frame: StackFrame
   ): NonEmptyChain[ScynamoEncodeError] =

@@ -86,7 +86,7 @@ trait DefaultScynamoEncoderInstances extends ScynamoIterableEncoder {
       val attrValues = List.newBuilder[AttributeValue]
       for ((x, i) <- xs.iterator.zipWithIndex) element.encode(x) match {
         case Right(attr)  => attrValues += attr
-        case Left(errors) => allErrors ++= StackFrame.push(errors, Index(i)).toChain
+        case Left(errors) => allErrors ++= StackFrame.encoding(errors, Index(i)).toChain
       }
 
       NonEmptyChain.fromChain(allErrors).toLeft(AttributeValue.builder.l(attrValues.result(): _*).build())
@@ -123,7 +123,7 @@ trait DefaultScynamoEncoderInstances extends ScynamoIterableEncoder {
       kvs.foreachEntry { (k, v) =>
         (key.encode(k), value.encode(v)).parTupled match {
           case Right((k, attr)) => if (!attr.nul) attrValues.put(k, attr)
-          case Left(errors)     => allErrors ++= StackFrame.push(errors, MapKey(k)).toChain
+          case Left(errors)     => allErrors ++= StackFrame.encoding(errors, MapKey(k)).toChain
         }
       }
 
@@ -191,7 +191,7 @@ object ObjectScynamoEncoder extends SemiautoDerivationEncoder {
       kvs.foreachEntry { (k, v) =>
         value.encode(v) match {
           case Right(attr)  => if (!attr.nul) attrValues.put(k, attr)
-          case Left(errors) => allErrors ++= StackFrame.push(errors, MapKey(k)).toChain
+          case Left(errors) => allErrors ++= StackFrame.encoding(errors, MapKey(k)).toChain
         }
       }
 

@@ -26,7 +26,7 @@ trait EncoderHListInstances {
       opts: ScynamoDerivationOpts[Base] = ScynamoDerivationOpts.default[Base]
   ): ShapelessScynamoEncoder[Base, FieldType[K, V] :: T] = { value =>
     val fieldName   = opts.transform(key.value.name)
-    val encodedHead = StackFrame.push(sv.encode(value.head), Attr(fieldName))
+    val encodedHead = StackFrame.encoding(sv.encode(value.head), Attr(fieldName))
     val encodedTail = st.encodeMap(value.tail)
     (encodedHead, encodedTail).parMapN { case (head, tail) =>
       if (!head.nul) tail.put(fieldName, head)
@@ -47,7 +47,7 @@ trait EncoderCoproductInstances {
   ): ShapelessScynamoEncoder[Base, FieldType[K, V] :+: T] = {
     case Inl(left) =>
       val name = opts.transform(key.value.name)
-      StackFrame.push(sv.value.encode(left), Case(name)).map { encoded =>
+      StackFrame.encoding(sv.value.encode(left), Case(name)).map { encoded =>
         val attr = new java.util.HashMap[String, AttributeValue](encoded.m())
         attr.put(opts.discriminator, AttributeValue.builder.s(name).build())
         attr
