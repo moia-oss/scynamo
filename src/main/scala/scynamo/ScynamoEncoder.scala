@@ -1,8 +1,8 @@
 package scynamo
 
-import cats.data.EitherNec
-import cats.syntax.either._
-import cats.syntax.parallel._
+import cats.Contravariant
+import cats.data.{Chain, EitherNec, NonEmptyChain}
+import cats.syntax.all._
 import scynamo.StackFrame.{Index, MapKey}
 import scynamo.generic.auto.AutoDerivationUnlocked
 import scynamo.generic.{GenericScynamoEncoder, SemiautoDerivationEncoder}
@@ -12,119 +12,151 @@ import shapeless.tag.@@
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
 import java.time.Instant
-import java.util.UUID
+import java.util.{Collections, UUID}
+import scala.collection.compat._
+import scala.collection.immutable.Seq
 import scala.concurrent.duration.{Duration, FiniteDuration}
-import scala.jdk.CollectionConverters._
 
 trait ScynamoEncoder[A] { self =>
   def encode(value: A): EitherNec[ScynamoEncodeError, AttributeValue]
-
-  def contramap[B](f: B => A): ScynamoEncoder[B] = value => self.encode(f(value))
+  def contramap[B](f: B => A): ScynamoEncoder[B] =
+    ScynamoEncoder.instance(value => self.encode(f(value)))
 }
 
 object ScynamoEncoder extends DefaultScynamoEncoderInstances {
   def apply[A](implicit instance: ScynamoEncoder[A]): ScynamoEncoder[A] = instance
+
+  // SAM syntax generates anonymous classes because of non-abstract methods like `contramap`.
+  private[scynamo] def instance[A](f: A => EitherNec[ScynamoEncodeError, AttributeValue]): ScynamoEncoder[A] = f(_)
 }
 
 trait DefaultScynamoEncoderInstances extends ScynamoIterableEncoder {
-  implicit val stringEncoder: ScynamoEncoder[String] = value => Right(AttributeValue.builder().s(value).build())
+  private val rightNul = Right(AttributeValue.builder.nul(true).build())
 
-  private[this] val numberStringEncoder: ScynamoEncoder[String] = value => Right(AttributeValue.builder().n(value).build())
+  implicit val catsInstances: Contravariant[ScynamoEncoder] = new Contravariant[ScynamoEncoder] {
+    override def contramap[A, B](fa: ScynamoEncoder[A])(f: B => A) = fa.contramap(f)
+  }
 
-  implicit val intEncoder: ScynamoEncoder[Int] = numberStringEncoder.contramap[Int](_.toString)
+  implicit val stringEncoder: ScynamoEncoder[String] =
+    ScynamoEncoder.instance(value => Right(AttributeValue.builder.s(value).build()))
 
-  implicit val longEncoder: ScynamoEncoder[Long] = numberStringEncoder.contramap[Long](_.toString)
+  private[this] val numberStringEncoder: ScynamoEncoder[String] =
+    ScynamoEncoder.instance(value => Right(AttributeValue.builder.n(value).build()))
 
-  implicit val bigIntEncoder: ScynamoEncoder[BigInt] = numberStringEncoder.contramap[BigInt](_.toString)
+  implicit val intEncoder: ScynamoEncoder[Int] =
+    numberStringEncoder.contramap(_.toString)
 
-  implicit val floatEncoder: ScynamoEncoder[Float] = numberStringEncoder.contramap[Float](_.toString)
+  implicit val longEncoder: ScynamoEncoder[Long] =
+    numberStringEncoder.contramap(_.toString)
 
-  implicit val doubleEncoder: ScynamoEncoder[Double] = numberStringEncoder.contramap[Double](_.toString)
+  implicit val bigIntEncoder: ScynamoEncoder[BigInt] =
+    numberStringEncoder.contramap(_.toString)
 
-  implicit val bigDecimalEncoder: ScynamoEncoder[BigDecimal] = numberStringEncoder.contramap[BigDecimal](_.toString)
+  implicit val floatEncoder: ScynamoEncoder[Float] =
+    numberStringEncoder.contramap(_.toString)
 
-  implicit val booleanEncoder: ScynamoEncoder[Boolean] = value => Right(AttributeValue.builder().bool(value).build())
+  implicit val doubleEncoder: ScynamoEncoder[Double] =
+    numberStringEncoder.contramap(_.toString)
 
-  implicit val instantEncoder: ScynamoEncoder[Instant] = numberStringEncoder.contramap[Instant](_.toEpochMilli.toString)
+  implicit val bigDecimalEncoder: ScynamoEncoder[BigDecimal] =
+    numberStringEncoder.contramap(_.toString)
+
+  implicit val booleanEncoder: ScynamoEncoder[Boolean] =
+    ScynamoEncoder.instance(value => Right(AttributeValue.builder.bool(value).build()))
+
+  implicit val instantEncoder: ScynamoEncoder[Instant] =
+    numberStringEncoder.contramap(_.toEpochMilli.toString)
 
   implicit val instantTtlEncoder: ScynamoEncoder[Instant @@ TimeToLive] =
     numberStringEncoder.contramap[Instant @@ TimeToLive](_.getEpochSecond.toString)
 
-  implicit val uuidEncoder: ScynamoEncoder[UUID] = stringEncoder.contramap[UUID](_.toString)
+  implicit val uuidEncoder: ScynamoEncoder[UUID] =
+    stringEncoder.contramap(_.toString)
 
-  implicit def seqEncoder[A: ScynamoEncoder]: ScynamoEncoder[scala.collection.immutable.Seq[A]] =
-    value => value.toVector.parTraverse(ScynamoEncoder[A].encode).map(xs => AttributeValue.builder().l(xs: _*).build())
+  implicit def seqEncoder[A](implicit element: ScynamoEncoder[A]): ScynamoEncoder[Seq[A]] =
+    ScynamoEncoder.instance { xs =>
+      var allErrors  = Chain.empty[ScynamoEncodeError]
+      val attrValues = List.newBuilder[AttributeValue]
+      for ((x, i) <- xs.iterator.zipWithIndex) element.encode(x) match {
+        case Right(attr)  => attrValues += attr
+        case Left(errors) => allErrors ++= StackFrame.encoding(errors, Index(i)).toChain
+      }
+
+      NonEmptyChain.fromChain(allErrors).toLeft(AttributeValue.builder.l(attrValues.result(): _*).build())
+    }
 
   implicit def listEncoder[A: ScynamoEncoder]: ScynamoEncoder[List[A]] =
-    value =>
-      value.zipWithIndex
-        .parTraverse { case (x, i) =>
-          ScynamoEncoder[A].encode(x).leftMap(_.map(_.push(Index(i))))
-        }
-        .map(xs => AttributeValue.builder().l(xs: _*).build())
+    seqEncoder[A].narrow
 
   implicit def vectorEncoder[A: ScynamoEncoder]: ScynamoEncoder[Vector[A]] =
-    value =>
-      value.zipWithIndex
-        .parTraverse { case (x, i) =>
-          ScynamoEncoder[A].encode(x).leftMap(_.map(_.push(Index(i))))
-        }
-        .map(xs => AttributeValue.builder().l(xs: _*).build())
+    seqEncoder[A].narrow
 
-  implicit def setEncoder[A: ScynamoEncoder]: ScynamoEncoder[Set[A]] = listEncoder[A].contramap[Set[A]](x => x.toList)
+  implicit def setEncoder[A: ScynamoEncoder]: ScynamoEncoder[Set[A]] =
+    listEncoder[A].contramap(_.toList)
 
-  implicit def optionEncoder[A: ScynamoEncoder]: ScynamoEncoder[Option[A]] = {
-    case Some(value) => ScynamoEncoder[A].encode(value)
-    case None        => Right(AttributeValue.builder().nul(true).build())
-  }
-
-  implicit def someEncoder[A: ScynamoEncoder]: ScynamoEncoder[Some[A]] = x => ScynamoEncoder[A].encode(x.get)
-
-  implicit val finiteDurationEncoder: ScynamoEncoder[FiniteDuration] = longEncoder.contramap(_.toNanos)
-
-  implicit val durationEncoder: ScynamoEncoder[Duration] = longEncoder.contramap(_.toNanos)
-
-  implicit def mapEncoder[A, B](implicit keyEncoder: ScynamoKeyEncoder[A], valueEncoder: ScynamoEncoder[B]): ScynamoEncoder[Map[A, B]] =
-    value => {
-      value.toVector
-        .parTraverse { case (k, v) =>
-          (keyEncoder.encode(k), valueEncoder.encode(v)).parMapN(_ -> _).leftMap(_.map(_.push(MapKey(k))))
-        }
-        .map {
-          _.foldLeft(new java.util.HashMap[String, AttributeValue]()) { case (acc, (k, v)) =>
-            acc.put(k, v)
-            acc
-          }
-        }
-        .map(hm => AttributeValue.builder().m(hm).build())
+  implicit def optionEncoder[A](implicit element: ScynamoEncoder[A]): ScynamoEncoder[Option[A]] =
+    ScynamoEncoder.instance {
+      case Some(value) => element.encode(value)
+      case None        => rightNul
     }
 
-  implicit val attributeValueEncoder: ScynamoEncoder[AttributeValue] = { value =>
-    import scynamo.syntax.attributevalue._
+  implicit def someEncoder[A](implicit element: ScynamoEncoder[A]): ScynamoEncoder[Some[A]] =
+    ScynamoEncoder.instance(some => element.encode(some.get))
 
-    val nonEmptyStringSet = value.asOption(ScynamoType.StringSet).map(x => ScynamoType.StringSet -> (x.size() > 0))
-    val nonEmptyNumberSet = value.asOption(ScynamoType.NumberSet).map(x => ScynamoType.NumberSet -> (x.size() > 0))
-    val nonEmptyBinarySet = value.asOption(ScynamoType.BinarySet).map(x => ScynamoType.BinarySet -> (x.size() > 0))
+  implicit val finiteDurationEncoder: ScynamoEncoder[FiniteDuration] =
+    numberStringEncoder.contramap(_.toNanos.toString)
 
-    nonEmptyStringSet.orElse(nonEmptyNumberSet).orElse(nonEmptyBinarySet) match {
-      case Some((typ, false))     => Either.leftNec(ScynamoEncodeError.invalidEmptyValue(typ))
-      case Some((_, true)) | None => Right(value)
+  implicit val durationEncoder: ScynamoEncoder[Duration] =
+    numberStringEncoder.contramap(_.toNanos.toString)
+
+  implicit def mapEncoder[A, B](implicit key: ScynamoKeyEncoder[A], value: ScynamoEncoder[B]): ScynamoEncoder[Map[A, B]] =
+    ScynamoEncoder.instance { kvs =>
+      var allErrors  = Chain.empty[ScynamoEncodeError]
+      val attrValues = new java.util.HashMap[String, AttributeValue](kvs.size)
+      kvs.foreachEntry { (k, v) =>
+        (key.encode(k), value.encode(v)) match {
+          case (Right(k), Right(attr)) =>
+            // Omit `nul` for efficiency and GSI support (see https://github.com/aws/aws-sdk-go/issues/1803)
+            if (!attr.nul) attrValues.put(k, attr)
+          case (Left(errors), Right(_)) =>
+            allErrors ++= StackFrame.encoding(errors, MapKey(k)).toChain
+          case (Right(_), Left(errors)) =>
+            allErrors ++= StackFrame.encoding(errors, MapKey(k)).toChain
+          case (Left(kErrors), Left(vErrors)) =>
+            allErrors ++= StackFrame.encoding(kErrors ++ vErrors, MapKey(k)).toChain
+        }
+      }
+
+      NonEmptyChain.fromChain(allErrors).toLeft(AttributeValue.builder.m(attrValues).build())
     }
-  }
 
-  implicit def eitherScynamoErrorEncoder[A: ScynamoEncoder]: ScynamoEncoder[EitherNec[ScynamoEncodeError, A]] = {
-    case Left(value)  => Left(value)
-    case Right(value) => ScynamoEncoder[A].encode(value)
-  }
+  implicit val attributeValueEncoder: ScynamoEncoder[AttributeValue] =
+    ScynamoEncoder.instance { value =>
+      import scynamo.syntax.attributevalue._
+
+      def nonEmpty[A](typ: ScynamoType.Aux[java.util.List[A]] with ScynamoType.TypeInvalidIfEmpty) =
+        if (value.asOption(typ).exists(!_.isEmpty)) Right(value)
+        else Either.leftNec(ScynamoEncodeError.invalidEmptyValue(typ))
+
+      if (value.hasSs) nonEmpty(ScynamoType.StringSet)
+      else if (value.hasNs) nonEmpty(ScynamoType.NumberSet)
+      else if (value.hasBs) nonEmpty(ScynamoType.BinarySet)
+      else Right(value)
+    }
+
+  implicit def eitherScynamoErrorEncoder[A](implicit right: ScynamoEncoder[A]): ScynamoEncoder[EitherNec[ScynamoEncodeError, A]] =
+    ScynamoEncoder.instance {
+      case Left(errors) => Left(errors)
+      case Right(value) => right.encode(value)
+    }
 
   implicit def fieldEncoder[K, V](implicit V: Lazy[ScynamoEncoder[V]]): ScynamoEncoder[FieldType[K, V]] =
-    field => V.value.encode(field)
+    ScynamoEncoder.instance(V.value.encode)
 }
 
 trait ScynamoIterableEncoder extends LowestPrioAutoEncoder {
   def iterableEncoder[A: ScynamoEncoder]: ScynamoEncoder[Iterable[A]] =
-    value =>
-      value.toList.parTraverse(ScynamoEncoder[A].encode).map(encodedValues => AttributeValue.builder().l(encodedValues.asJava).build())
+    ScynamoEncoder.listEncoder[A].contramap(_.toList)
 }
 
 trait LowestPrioAutoEncoder {
@@ -136,41 +168,60 @@ trait LowestPrioAutoEncoder {
 
 trait ObjectScynamoEncoder[A] extends ScynamoEncoder[A] {
   def encodeMap(value: A): EitherNec[ScynamoEncodeError, java.util.Map[String, AttributeValue]]
-
   override def encode(value: A): EitherNec[ScynamoEncodeError, AttributeValue] =
-    encodeMap(value).map(AttributeValue.builder().m(_).build())
+    encodeMap(value).map(AttributeValue.builder.m(_).build())
 }
 
 object ObjectScynamoEncoder extends SemiautoDerivationEncoder {
   def apply[A](implicit instance: ObjectScynamoEncoder[A]): ObjectScynamoEncoder[A] = instance
 
-  implicit def mapEncoder[A](implicit valueEncoder: ScynamoEncoder[A]): ObjectScynamoEncoder[Map[String, A]] =
-    value => {
-      value.toList
-        .parTraverse { case (k, v) => valueEncoder.encode(v).map(k -> _) }
-        .map {
-          _.foldLeft(new java.util.HashMap[String, AttributeValue]()) { case (acc, (k, v)) =>
-            acc.put(k, v)
-            acc
-          }
+  // SAM syntax generates anonymous classes because of non-abstract methods like `encode`.
+  private[scynamo] def instance[A](
+      f: A => EitherNec[ScynamoEncodeError, java.util.Map[String, AttributeValue]]
+  ): ObjectScynamoEncoder[A] = f(_)
+
+  implicit val catsInstances: Contravariant[ObjectScynamoEncoder] = new Contravariant[ObjectScynamoEncoder] {
+    override def contramap[A, B](fa: ObjectScynamoEncoder[A])(f: B => A) =
+      instance(value => fa.encodeMap(f(value)))
+  }
+
+  implicit def mapEncoder[A](implicit value: ScynamoEncoder[A]): ObjectScynamoEncoder[Map[String, A]] =
+    instance { kvs =>
+      var allErrors  = Chain.empty[ScynamoEncodeError]
+      val attrValues = new java.util.HashMap[String, AttributeValue](kvs.size)
+      kvs.foreachEntry { (k, v) =>
+        value.encode(v) match {
+          // Omit `nul` for efficiency and GSI support (see https://github.com/aws/aws-sdk-go/issues/1803)
+          case Right(attr)  => if (!attr.nul) attrValues.put(k, attr)
+          case Left(errors) => allErrors ++= StackFrame.encoding(errors, MapKey(k)).toChain
         }
+      }
+
+      NonEmptyChain.fromChain(allErrors).toLeft(Collections.unmodifiableMap(attrValues))
     }
 }
 
 trait ScynamoKeyEncoder[A] { self =>
   def encode(value: A): EitherNec[ScynamoEncodeError, String]
-
-  def contramap[B](f: B => A): ScynamoKeyEncoder[B] = value => self.encode(f(value))
+  def contramap[B](f: B => A): ScynamoKeyEncoder[B] =
+    ScynamoKeyEncoder.instance(value => self.encode(f(value)))
 }
 
 object ScynamoKeyEncoder {
   def apply[A](implicit encoder: ScynamoKeyEncoder[A]): ScynamoKeyEncoder[A] = encoder
 
-  implicit val stringKeyEncoder: ScynamoKeyEncoder[String] = value =>
-    if (value.nonEmpty)
-      Right(value)
-    else
-      Either.leftNec(ScynamoEncodeError.invalidEmptyValue(ScynamoType.String))
+  // SAM syntax generates anonymous classes because of non-abstract methods like `contramap`.
+  private[scynamo] def instance[A](f: A => EitherNec[ScynamoEncodeError, String]): ScynamoKeyEncoder[A] = f(_)
 
-  implicit val uuidKeyEncoder: ScynamoKeyEncoder[UUID] = ScynamoKeyEncoder[String].contramap[UUID](_.toString)
+  implicit val catsInstances: Contravariant[ScynamoKeyEncoder] = new Contravariant[ScynamoKeyEncoder] {
+    override def contramap[A, B](fa: ScynamoKeyEncoder[A])(f: B => A) = fa.contramap(f)
+  }
+
+  implicit val stringKeyEncoder: ScynamoKeyEncoder[String] = instance { value =>
+    if (value.nonEmpty) Right(value)
+    else Either.leftNec(ScynamoEncodeError.invalidEmptyValue(ScynamoType.String))
+  }
+
+  implicit val uuidKeyEncoder: ScynamoKeyEncoder[UUID] =
+    ScynamoKeyEncoder[String].contramap(_.toString)
 }

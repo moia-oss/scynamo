@@ -75,7 +75,8 @@ lazy val scalacOptions_2_13 = Seq(
   "-Xfatal-warnings",
   "-Ywarn-dead-code",
   "-Ymacro-annotations",
-  "-Xlint:_,-byname-implicit",
+  "-Xlint:_,-byname-implicit,-unused",
+  "-Wunused:_,-imports,-synthetics",
   "-Xsource:3"
 )
 

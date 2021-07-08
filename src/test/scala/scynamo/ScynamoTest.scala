@@ -1,6 +1,10 @@
 package scynamo
 
-import software.amazon.awssdk.services.dynamodb.model.{AttributeValue, GetItemResponse, QueryResponse, ScanResponse}
+import scynamo.syntax.encoder._
+import software.amazon.awssdk.services.dynamodb.model._
+
+import java.util.UUID
+import scala.jdk.CollectionConverters._
 
 class ScynamoTest extends UnitTest {
   "Scynamo" should {
@@ -34,7 +38,6 @@ class ScynamoTest extends UnitTest {
     }
 
     "return the decoded result if it has an item that is well formed" in {
-      import scynamo.syntax.encoder._
       val input = Map("foo" -> "bar")
 
       val result = for {
@@ -47,7 +50,6 @@ class ScynamoTest extends UnitTest {
     }
 
     "return the decoded query result if it has multiple items that are well formed" in {
-      import scynamo.syntax.encoder._
       val input1 = Map("foo" -> "bar")
       val input2 = Map("Miami" -> "Ibiza")
 
@@ -61,7 +63,6 @@ class ScynamoTest extends UnitTest {
     }
 
     "return the decoded scan result if it has multiple items that are well formed" in {
-      import scynamo.syntax.encoder._
       val input1 = Map("foo" -> "bar")
       val input2 = Map("Miami" -> "Ibiza")
 
@@ -72,6 +73,22 @@ class ScynamoTest extends UnitTest {
         result <- Scynamo.decodeScanResponse[Map[String, String]](response)
       } yield result
       result should ===(Right(List(input1, input2)))
+    }
+
+    "omit empty keys from a map with UUID keys" in {
+      val customer1 = UUID.randomUUID()
+      val customer2 = UUID.randomUUID()
+      val emails    = Map(customer1 -> Some("john.doe@moia.io"), customer2 -> None)
+      val result    = emails.encoded.map(_.m.keySet.asScala.toSet)
+      result should ===(Right(Set(customer1.toString)))
+    }
+
+    "omit empty keys from a map with String keys" in {
+      val customer1 = UUID.randomUUID().toString
+      val customer2 = UUID.randomUUID().toString
+      val emails    = Map(customer1 -> Some("john.doe@moia.io"), customer2 -> None)
+      val result    = emails.encodedMap.map(_.keySet.asScala.toSet)
+      result should ===(Right(Set(customer1)))
     }
   }
 }
