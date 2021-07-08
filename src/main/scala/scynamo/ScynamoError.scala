@@ -39,16 +39,16 @@ object StackFrame {
   case class MapKey[A](value: A)  extends StackFrame
   case class Custom(name: String) extends StackFrame
 
-  private[scynamo] def encoding[A](
-      encoded: EitherNec[ScynamoEncodeError, A],
-      frame: StackFrame
-  ): EitherNec[ScynamoEncodeError, A] =
+  private[scynamo] def encoding[A](encoded: EitherNec[ScynamoEncodeError, A], frame: StackFrame): EitherNec[ScynamoEncodeError, A] =
     encoded.leftMap(encoding(_, frame))
 
-  private[scynamo] def encoding[A](
-      errors: NonEmptyChain[ScynamoEncodeError],
-      frame: StackFrame
-  ): NonEmptyChain[ScynamoEncodeError] =
+  private[scynamo] def encoding[A](errors: NonEmptyChain[ScynamoEncodeError], frame: StackFrame): NonEmptyChain[ScynamoEncodeError] =
+    errors.map(_.push(frame))
+
+  private[scynamo] def decoding[A](encoded: EitherNec[ScynamoDecodeError, A], frame: StackFrame): EitherNec[ScynamoDecodeError, A] =
+    encoded.leftMap(decoding(_, frame))
+
+  private[scynamo] def decoding[A](errors: NonEmptyChain[ScynamoDecodeError], frame: StackFrame): NonEmptyChain[ScynamoDecodeError] =
     errors.map(_.push(frame))
 }
 
