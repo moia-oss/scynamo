@@ -24,8 +24,7 @@ lazy val root = project
       "org.typelevel"          %% "cats-core"               % "2.6.1",
       "org.typelevel"          %% "cats-testkit-scalatest"  % "2.1.5"  % Test,
       "org.scalacheck"         %% "scalacheck"              % "1.15.4" % Test,
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.5.0",
-      "org.scala-lang.modules" %% "scala-java8-compat"      % "1.0.0"
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.5.0"
     )
   )
   .settings(sbtGitSettings)
@@ -38,12 +37,11 @@ lazy val docs = project
   .dependsOn(root)
   .enablePlugins(MdocPlugin)
   .settings(
-    Seq(
-      mdocVariables := Map("VERSION" -> version.value),
-      publish := {},
-      publishLocal := {},
-      publishArtifact := false
-    )
+    mdocVariables := Map("VERSION" -> version.value),
+    publish := {},
+    publishLocal := {},
+    publishArtifact := false,
+    libraryDependencies += "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.0"
   )
 
 lazy val scalacOptions_2_12 = Seq(
