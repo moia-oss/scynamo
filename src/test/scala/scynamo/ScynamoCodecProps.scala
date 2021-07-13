@@ -7,7 +7,7 @@ import scynamo.generic.semiauto._
 import scynamo.wrapper.{ScynamoNumberSet, ScynamoStringSet}
 import shapeless.tag
 
-import java.time.Instant
+import java.time.{Instant, YearMonth}
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 import scala.concurrent.duration.Duration
@@ -22,15 +22,25 @@ class ScynamoCodecProps extends Properties("ScynamoCodec") {
     suffix <- Gen.nonEmptyListOf(Gen.numChar).map(_.mkString)
   } yield BigDecimal(s"$prefix.$suffix")
 
-  propertyWithSeed("decode.encode === id (int)", propertySeed) = Prop.forAll { value: Int => decodeAfterEncodeIsIdentity(value) }
+  propertyWithSeed("decode.encode === id (int)", propertySeed) = Prop.forAll { value: Int =>
+    decodeAfterEncodeIsIdentity(value)
+  }
 
-  propertyWithSeed("decode.encode === id (long)", propertySeed) = Prop.forAll { value: Long => decodeAfterEncodeIsIdentity(value) }
+  propertyWithSeed("decode.encode === id (long)", propertySeed) = Prop.forAll { value: Long =>
+    decodeAfterEncodeIsIdentity(value)
+  }
 
-  propertyWithSeed("decode.encode === id (BigInt)", propertySeed) = Prop.forAll { value: BigInt => decodeAfterEncodeIsIdentity(value) }
+  propertyWithSeed("decode.encode === id (BigInt)", propertySeed) = Prop.forAll { value: BigInt =>
+    decodeAfterEncodeIsIdentity(value)
+  }
 
-  propertyWithSeed("decode.encode === id (float)", propertySeed) = Prop.forAll { value: Float => decodeAfterEncodeIsIdentity(value) }
+  propertyWithSeed("decode.encode === id (float)", propertySeed) = Prop.forAll { value: Float =>
+    decodeAfterEncodeIsIdentity(value)
+  }
 
-  propertyWithSeed("decode.encode === id (double)", propertySeed) = Prop.forAll { value: Double => decodeAfterEncodeIsIdentity(value) }
+  propertyWithSeed("decode.encode === id (double)", propertySeed) = Prop.forAll { value: Double =>
+    decodeAfterEncodeIsIdentity(value)
+  }
 
   propertyWithSeed("decode.encode === id (BigDecimal)", propertySeed) = Prop.forAll { value: BigDecimal =>
     decodeAfterEncodeIsIdentity(value)
@@ -41,7 +51,9 @@ class ScynamoCodecProps extends Properties("ScynamoCodec") {
 
   property("decode.encode === id (empty string)") = decodeAfterEncodeIsIdentity("")
 
-  propertyWithSeed("decode.encode === id (boolean)", propertySeed) = Prop.forAll { value: Boolean => decodeAfterEncodeIsIdentity(value) }
+  propertyWithSeed("decode.encode === id (boolean)", propertySeed) = Prop.forAll { value: Boolean =>
+    decodeAfterEncodeIsIdentity(value)
+  }
 
   propertyWithSeed("decode.encode === id (instant)", propertySeed) = Prop.forAll(Gen.calendar.map(_.toInstant)) { value: Instant =>
     decodeAfterEncodeIsIdentity(value)
@@ -56,11 +68,17 @@ class ScynamoCodecProps extends Properties("ScynamoCodec") {
     decodeAfterEncodeIsIdentity(value)
   }
 
-  propertyWithSeed("decode.encode === id (list)", propertySeed) = Prop.forAll { value: List[Int] => decodeAfterEncodeIsIdentity(value) }
+  propertyWithSeed("decode.encode === id (list)", propertySeed) = Prop.forAll { value: List[Int] =>
+    decodeAfterEncodeIsIdentity(value)
+  }
 
-  propertyWithSeed("decode.encode === id (vector)", propertySeed) = Prop.forAll { value: Vector[Int] => decodeAfterEncodeIsIdentity(value) }
+  propertyWithSeed("decode.encode === id (vector)", propertySeed) = Prop.forAll { value: Vector[Int] =>
+    decodeAfterEncodeIsIdentity(value)
+  }
 
-  propertyWithSeed("decode.encode === id (set)", propertySeed) = Prop.forAll { value: Set[Int] => decodeAfterEncodeIsIdentity(value) }
+  propertyWithSeed("decode.encode === id (set)", propertySeed) = Prop.forAll { value: Set[Int] =>
+    decodeAfterEncodeIsIdentity(value)
+  }
 
   propertyWithSeed("decode.encode === id (option)", propertySeed) = Prop.forAll { value: Option[Int] => decodeAfterEncodeIsIdentity(value) }
 
@@ -74,6 +92,10 @@ class ScynamoCodecProps extends Properties("ScynamoCodec") {
       decodeAfterEncodeIsIdentity(Duration.fromNanos(value): Duration)
     }
 
+  propertyWithSeed("decode.encode === id (year month)", propertySeed) = Prop.forAll { value: YearMonth =>
+    decodeAfterEncodeIsIdentity(value)
+  }
+
   propertyWithSeed("decode.encode === id (case class)", propertySeed) = Prop.forAll { value: Int =>
     decodeAfterEncodeIsIdentity(ScynamoCodecProps.Foo(value))
   }
@@ -82,7 +104,9 @@ class ScynamoCodecProps extends Properties("ScynamoCodec") {
     decodeAfterEncodeIsIdentity(value)
   }
 
-  propertyWithSeed("decode.encode === id (uuid)", propertySeed) = Prop.forAll { value: UUID => decodeAfterEncodeIsIdentity(value) }
+  propertyWithSeed("decode.encode === id (uuid)", propertySeed) = Prop.forAll { value: UUID =>
+    decodeAfterEncodeIsIdentity(value)
+  }
 
   propertyWithSeed("decode.encode === id (scala map)", propertySeed) = Prop.forAll { value: Map[UUID, Int] =>
     decodeAfterEncodeIsIdentity(value)

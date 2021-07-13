@@ -11,7 +11,7 @@ import shapeless.labelled.FieldType
 import shapeless.tag.@@
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
-import java.time.Instant
+import java.time.{Instant, YearMonth}
 import java.util.{Collections, UUID}
 import scala.collection.compat._
 import scala.collection.immutable.Seq
@@ -34,7 +34,7 @@ trait DefaultScynamoEncoderInstances extends ScynamoIterableEncoder {
   private val rightNul = Right(AttributeValue.builder.nul(true).build())
 
   implicit val catsInstances: Contravariant[ScynamoEncoder] = new Contravariant[ScynamoEncoder] {
-    override def contramap[A, B](fa: ScynamoEncoder[A])(f: B => A) = fa.contramap(f)
+    override def contramap[A, B](fa: ScynamoEncoder[A])(f: B => A): ScynamoEncoder[B] = fa.contramap(f)
   }
 
   implicit val stringEncoder: ScynamoEncoder[String] =
@@ -109,6 +109,9 @@ trait DefaultScynamoEncoderInstances extends ScynamoIterableEncoder {
   implicit val durationEncoder: ScynamoEncoder[Duration] =
     numberStringEncoder.contramap(_.toNanos.toString)
 
+  implicit val yearMonthEncoder: ScynamoEncoder[YearMonth] =
+    stringEncoder.contramap(_.toString)
+
   implicit def mapEncoder[A, B](implicit key: ScynamoKeyEncoder[A], value: ScynamoEncoder[B]): ScynamoEncoder[Map[A, B]] =
     ScynamoEncoder.instance { kvs =>
       var allErrors  = Chain.empty[ScynamoEncodeError]
@@ -181,7 +184,7 @@ object ObjectScynamoEncoder extends SemiautoDerivationEncoder {
   ): ObjectScynamoEncoder[A] = f(_)
 
   implicit val catsInstances: Contravariant[ObjectScynamoEncoder] = new Contravariant[ObjectScynamoEncoder] {
-    override def contramap[A, B](fa: ObjectScynamoEncoder[A])(f: B => A) =
+    override def contramap[A, B](fa: ObjectScynamoEncoder[A])(f: B => A): ObjectScynamoEncoder[B] =
       instance(value => fa.encodeMap(f(value)))
   }
 
@@ -214,7 +217,7 @@ object ScynamoKeyEncoder {
   private[scynamo] def instance[A](f: A => EitherNec[ScynamoEncodeError, String]): ScynamoKeyEncoder[A] = f(_)
 
   implicit val catsInstances: Contravariant[ScynamoKeyEncoder] = new Contravariant[ScynamoKeyEncoder] {
-    override def contramap[A, B](fa: ScynamoKeyEncoder[A])(f: B => A) = fa.contramap(f)
+    override def contramap[A, B](fa: ScynamoKeyEncoder[A])(f: B => A): ScynamoKeyEncoder[B] = fa.contramap(f)
   }
 
   implicit val stringKeyEncoder: ScynamoKeyEncoder[String] = instance { value =>
