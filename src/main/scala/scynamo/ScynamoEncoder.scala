@@ -11,6 +11,7 @@ import shapeless.labelled.FieldType
 import shapeless.tag.@@
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
+import java.time.format.DateTimeFormatter
 import java.time.{Instant, YearMonth}
 import java.util.{Collections, UUID}
 import scala.collection.compat._
@@ -109,8 +110,12 @@ trait DefaultScynamoEncoderInstances extends ScynamoIterableEncoder {
   implicit val durationEncoder: ScynamoEncoder[Duration] =
     numberStringEncoder.contramap(_.toNanos.toString)
 
+  /** Using a custom formatter because
+    * "Years outside the range 0000 to 9999 must be prefixed by the plus or minus symbol."
+    * but the plus symbol is not added by the default `.toString`.
+    */
   implicit val yearMonthEncoder: ScynamoEncoder[YearMonth] =
-    stringEncoder.contramap(_.toString)
+    stringEncoder.contramap(_.format(DateTimeFormatter.ofPattern("uuuu-MM")))
 
   implicit def mapEncoder[A, B](implicit key: ScynamoKeyEncoder[A], value: ScynamoEncoder[B]): ScynamoEncoder[Map[A, B]] =
     ScynamoEncoder.instance { kvs =>

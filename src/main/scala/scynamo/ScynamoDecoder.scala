@@ -12,6 +12,7 @@ import shapeless.tag.@@
 import shapeless.{tag, Lazy}
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
+import java.time.format.DateTimeFormatter
 import java.time.{Instant, YearMonth}
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -141,8 +142,12 @@ trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with Scynam
   implicit val durationDecoder: ScynamoDecoder[Duration] =
     longDecoder.map(Duration(_, TimeUnit.NANOSECONDS))
 
+  /** Using a custom formatter because
+    * "Years outside the range 0000 to 9999 must be prefixed by the plus or minus symbol."
+    * but the plus symbol is not added by the default `.toString`.
+    */
   implicit val yearMonthDecoder: ScynamoDecoder[YearMonth] =
-    stringDecoder.map(YearMonth.parse)
+    stringDecoder.map(YearMonth.parse(_, DateTimeFormatter.ofPattern("uuuu-MM")))
 
   implicit val uuidDecoder: ScynamoDecoder[UUID] =
     ScynamoDecoder.instance(_.asEither(ScynamoType.String).flatMap(convert(_, "UUID")(UUID.fromString)))
