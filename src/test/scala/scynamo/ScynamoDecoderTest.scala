@@ -1,12 +1,12 @@
 package scynamo
 
-import java.util.Collections
-
 import cats.data.EitherNec
 import org.scalatest.{Inside, Inspectors}
 import scynamo.StackFrame.{Attr, Case, Enum}
 import scynamo.generic.ScynamoSealedTraitOpts
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
+
+import java.util.Collections
 
 class ScynamoDecoderTest extends UnitTest {
   "ScynamoDecoder" should {
@@ -79,6 +79,26 @@ class ScynamoDecoderTest extends UnitTest {
       val result = ScynamoDecoder[Foo].decode(input)
 
       result should ===(Right(Foo("the-a", None)))
+    }
+
+    "fail to decode YearMonths encoded using the default formatter" in {
+      import scynamo.generic.auto._
+
+      import java.time.YearMonth
+
+      case class Foo(a: String, b: YearMonth)
+
+      val yearMonth  = YearMonth.of(200000, 12).toString
+      val attrValues = new java.util.HashMap[String, AttributeValue]
+      attrValues.put("a", AttributeValue.builder().s("the-a").build())
+      attrValues.put("b", AttributeValue.builder().s(yearMonth).build())
+      val input = AttributeValue.builder().m(attrValues).build()
+
+      val result = ScynamoDecoder[Foo].decode(input)
+
+      Inside.inside(result) { case Left(errs) =>
+        errs.head.stack.frames should ===(List[StackFrame](Attr("b")))
+      }
     }
 
     "provide a stack to the error for nested case classes" in {

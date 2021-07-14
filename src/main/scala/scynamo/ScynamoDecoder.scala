@@ -7,12 +7,13 @@ import scynamo.StackFrame.{Index, MapKey}
 import scynamo.generic.auto.AutoDerivationUnlocked
 import scynamo.generic.{GenericScynamoDecoder, SemiautoDerivationDecoder}
 import scynamo.syntax.attributevalue._
+import scynamo.wrapper.YearMonthFormatter.yearMonthFormatter
 import shapeless.labelled.{field, FieldType}
 import shapeless.tag.@@
 import shapeless.{tag, Lazy}
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
-import java.time.Instant
+import java.time.{Instant, YearMonth}
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import scala.annotation.tailrec
@@ -39,8 +40,8 @@ trait ScynamoDecoder[A] extends ScynamoDecoderFunctions { self =>
   def defaultValue: Option[A] = None
 
   def withDefault(value: A): ScynamoDecoder[A] = new ScynamoDecoder[A] {
-    override def decode(attributeValue: AttributeValue) = self.decode(attributeValue)
-    override val defaultValue                           = Some(value)
+    override def decode(attributeValue: AttributeValue): EitherNec[ScynamoDecodeError, A] = self.decode(attributeValue)
+    override val defaultValue: Option[A]                                                  = Some(value)
   }
 }
 
@@ -141,6 +142,9 @@ trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with Scynam
   implicit val durationDecoder: ScynamoDecoder[Duration] =
     longDecoder.map(Duration(_, TimeUnit.NANOSECONDS))
 
+  implicit val yearMonthDecoder: ScynamoDecoder[YearMonth] =
+    ScynamoDecoder.instance(_.asEither(ScynamoType.String).flatMap(convert(_, "YearMonth")(YearMonth.parse(_, yearMonthFormatter))))
+
   implicit val uuidDecoder: ScynamoDecoder[UUID] =
     ScynamoDecoder.instance(_.asEither(ScynamoType.String).flatMap(convert(_, "UUID")(UUID.fromString)))
 
@@ -170,9 +174,9 @@ trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with Scynam
 
   implicit def fieldDecoder[K, V](implicit V: Lazy[ScynamoDecoder[V]]): ScynamoDecoder[FieldType[K, V]] =
     new ScynamoDecoder[FieldType[K, V]] {
-      override def decode(attributeValue: AttributeValue) =
+      override def decode(attributeValue: AttributeValue): EitherNec[ScynamoDecodeError, FieldType[K, V]] =
         V.value.decode(attributeValue).map(field[K][V])
-      override lazy val defaultValue =
+      override lazy val defaultValue: Option[FieldType[K, V]] =
         V.value.defaultValue.map(field[K][V])
     }
 }
@@ -180,7 +184,7 @@ trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with Scynam
 trait ScynamoIterableDecoder extends LowestPrioAutoDecoder {
   import scynamo.syntax.attributevalue._
 
-  def iterableDecoder[A, C[x] <: Iterable[x]](implicit element: ScynamoDecoder[A], factory: Factory[A, C[A]]): ScynamoDecoder[C[A]] =
+  def iterableDecoder[A, C[_] <: Iterable[_]](implicit element: ScynamoDecoder[A], factory: Factory[A, C[A]]): ScynamoDecoder[C[A]] =
     ScynamoDecoder.instance(_.asEither(ScynamoType.List).flatMap { attributes =>
       var allErrors = Chain.empty[ScynamoDecodeError]
       val allValues = factory.newBuilder
