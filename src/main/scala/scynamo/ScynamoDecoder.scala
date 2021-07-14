@@ -184,8 +184,6 @@ trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with Scynam
 trait ScynamoIterableDecoder extends LowestPrioAutoDecoder {
   import scynamo.syntax.attributevalue._
 
-  import scala.language.higherKinds
-
   def iterableDecoder[A, C[_] <: Iterable[_]](implicit element: ScynamoDecoder[A], factory: Factory[A, C[A]]): ScynamoDecoder[C[A]] =
     ScynamoDecoder.instance(_.asEither(ScynamoType.List).flatMap { attributes =>
       var allErrors = Chain.empty[ScynamoDecodeError]
