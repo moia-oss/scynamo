@@ -13,7 +13,7 @@ import shapeless.tag.@@
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
 import java.time.{Instant, YearMonth}
-import java.util.{Collections, UUID}
+import java.util.UUID
 import scala.collection.compat._
 import scala.collection.immutable.Seq
 import scala.concurrent.duration.{Duration, FiniteDuration}
@@ -201,7 +201,7 @@ object ObjectScynamoEncoder extends SemiautoDerivationEncoder {
         }
       }
 
-      NonEmptyChain.fromChain(allErrors).toLeft(Collections.unmodifiableMap(attrValues))
+      NonEmptyChain.fromChain(allErrors).toLeft(attrValues)
     }
 }
 

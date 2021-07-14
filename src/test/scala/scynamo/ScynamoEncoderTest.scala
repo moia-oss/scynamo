@@ -1,13 +1,15 @@
 package scynamo
 
 import cats.data.EitherNec
-import cats.syntax.either._
+import cats.syntax.all._
 import org.scalatest.Inside
-import scynamo.ScynamoEncoderTest.{Foo, Foo2, Snake}
+import scynamo.syntax.all._
+import scynamo.ScynamoEncoderTest._
 import scynamo.StackFrame.{Attr, Case, Index, MapKey}
 import scynamo.wrapper.{ScynamoBinarySet, ScynamoNumberSet, ScynamoStringSet}
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
+import scala.jdk.CollectionConverters._
 
 class ScynamoEncoderTest extends UnitTest {
   "ScynamoEncoder" should {
@@ -138,14 +140,49 @@ class ScynamoEncoderTest extends UnitTest {
         .encodeMap(Snake(1, Some(Snake(2, None))))
         .map(attrs => Option(attrs.get("tail").m.get("tail"))) should ===(Right(None))
     }
+
+    "allow modifying encoded maps" in {
+      val prices = Typed("price", Map("milk" -> 1.29, "hummus" -> 0.99))
+      prices.encodedMap.map(_.asScala) shouldBe Right(
+        Map(
+          "type"   -> AttributeValue.builder.s("price").build(),
+          "milk"   -> AttributeValue.builder.n("1.29").build(),
+          "hummus" -> AttributeValue.builder.n("0.99").build()
+        )
+      )
+    }
+
+    "allow modifying encoded objects" in {
+      val prices = Typed("snake", Snake(42, None))
+      prices.encodedMap.map(_.asScala) shouldBe Right(
+        Map(
+          "type" -> AttributeValue.builder.s("snake").build(),
+          "head" -> AttributeValue.builder.n("42").build()
+        )
+      )
+    }
   }
 }
 
 object ScynamoEncoderTest {
+  case class Typed[A](tpe: String, value: A)
+  object Typed {
+    implicit def encoder[A: ObjectScynamoEncoder]: ObjectScynamoEncoder[Typed[A]] =
+      ObjectScynamoEncoder.instance { case Typed(tpe, value) =>
+        for {
+          encodedType  <- tpe.encoded
+          encodedValue <- value.encodedMap
+        } yield {
+          encodedValue.put("type", encodedType)
+          encodedValue
+        }
+      }
+  }
+
   case class Snake[A](head: A, tail: Option[Snake[A]])
   object Snake {
-    implicit def codec[A: ScynamoCodec]: ObjectScynamoCodec[Snake[A]] =
-      scynamo.generic.semiauto.deriveScynamoCodec[Snake[A]]
+    implicit def codec[A: ScynamoEncoder]: ObjectScynamoEncoder[Snake[A]] =
+      scynamo.generic.semiauto.deriveScynamoEncoder[Snake[A]]
   }
 
   case class Foo(i: Int)
