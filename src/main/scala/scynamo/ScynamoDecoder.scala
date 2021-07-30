@@ -1,21 +1,20 @@
 package scynamo
 
 import cats.data.{Chain, EitherNec, NonEmptyChain}
-import cats.syntax.either._
+import cats.syntax.all._
 import cats.{Monad, SemigroupK}
 import scynamo.StackFrame.{Index, MapKey}
 import scynamo.generic.auto.AutoDerivationUnlocked
 import scynamo.generic.{GenericScynamoDecoder, SemiautoDerivationDecoder}
 import scynamo.syntax.attributevalue._
-import scynamo.wrapper.YearMonthFormatter.yearMonthFormatter
+import scynamo.wrapper.DateTimeFormatters
 import shapeless.labelled.{field, FieldType}
 import shapeless.tag.@@
 import shapeless.{tag, Lazy}
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
-import java.time.{Instant, YearMonth}
+import java.time._
 import java.util.UUID
-import java.util.concurrent.TimeUnit
 import scala.annotation.tailrec
 import scala.collection.compat._
 import scala.collection.immutable.Seq
@@ -43,6 +42,9 @@ trait ScynamoDecoder[A] extends ScynamoDecoderFunctions { self =>
     override def decode(attributeValue: AttributeValue): EitherNec[ScynamoDecodeError, A] = self.decode(attributeValue)
     override val defaultValue: Option[A]                                                  = Some(value)
   }
+
+  def emap[B](f: A => EitherNec[ScynamoDecodeError, B]): ScynamoDecoder[B] =
+    ScynamoDecoder.instance(decode(_).flatMap(f))
 }
 
 object ScynamoDecoder extends DefaultScynamoDecoderInstances {
@@ -51,8 +53,8 @@ object ScynamoDecoder extends DefaultScynamoDecoderInstances {
   def const[A](value: A): ScynamoDecoder[A] =
     instance(_ => Right(value))
 
-  // SAM syntax generates anonymous classes because of non-abstract methods like `defaultValue`.
-  private[scynamo] def instance[A](f: AttributeValue => EitherNec[ScynamoDecodeError, A]): ScynamoDecoder[A] = f(_)
+  /** SAM syntax generates anonymous classes on Scala 2 because of non-abstract methods like `defaultValue`. */
+  def instance[A](decode: AttributeValue => EitherNec[ScynamoDecodeError, A]): ScynamoDecoder[A] = decode(_)
 }
 
 trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with ScynamoIterableDecoder {
@@ -109,20 +111,10 @@ trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with Scynam
     ScynamoDecoder.instance(_.asEither(ScynamoType.Bool))
 
   implicit val instantDecoder: ScynamoDecoder[Instant] =
-    ScynamoDecoder.instance { attr =>
-      for {
-        number <- attr.asEither(ScynamoType.Number)
-        result <- convert(number, "Long")(_.toLong)
-      } yield Instant.ofEpochMilli(result)
-    }
+    longDecoder.map(Instant.ofEpochMilli)
 
   implicit val instantTtlDecoder: ScynamoDecoder[Instant @@ TimeToLive] =
-    ScynamoDecoder.instance { attr =>
-      for {
-        number <- attr.asEither(ScynamoType.Number)
-        result <- convert(number, "Long")(_.toLong)
-      } yield tag[TimeToLive][Instant](Instant.ofEpochSecond(result))
-    }
+    longDecoder.map(seconds => tag[TimeToLive](Instant.ofEpochSecond(seconds)))
 
   implicit def seqDecoder[A: ScynamoDecoder]: ScynamoDecoder[Seq[A]]       = iterableDecoder
   implicit def listDecoder[A: ScynamoDecoder]: ScynamoDecoder[List[A]]     = iterableDecoder
@@ -140,13 +132,25 @@ trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with Scynam
     longDecoder.map(Duration.fromNanos)
 
   implicit val durationDecoder: ScynamoDecoder[Duration] =
-    longDecoder.map(Duration(_, TimeUnit.NANOSECONDS))
+    finiteDurationDecoder.widen
+
+  implicit val javaDurationDecoder: ScynamoDecoder[java.time.Duration] =
+    longDecoder.map(java.time.Duration.ofNanos)
 
   implicit val yearMonthDecoder: ScynamoDecoder[YearMonth] =
-    ScynamoDecoder.instance(_.asEither(ScynamoType.String).flatMap(convert(_, "YearMonth")(YearMonth.parse(_, yearMonthFormatter))))
+    stringDecoder.emap(convert(_, "YearMonth")(YearMonth.parse(_, DateTimeFormatters.yearMonth)))
+
+  implicit val localDateDecoder: ScynamoDecoder[LocalDate] =
+    stringDecoder.emap(convert(_, "LocalDate")(LocalDate.parse(_, DateTimeFormatters.localDate)))
+
+  implicit val localDateTimeDecoder: ScynamoDecoder[LocalDateTime] =
+    stringDecoder.emap(convert(_, "LocalDateTime")(LocalDateTime.parse(_, DateTimeFormatters.localDateTime)))
+
+  implicit val zonedDateTimeDecoder: ScynamoDecoder[ZonedDateTime] =
+    stringDecoder.emap(convert(_, "ZonedDateTime")(ZonedDateTime.parse(_, DateTimeFormatters.zonedDateTime)))
 
   implicit val uuidDecoder: ScynamoDecoder[UUID] =
-    ScynamoDecoder.instance(_.asEither(ScynamoType.String).flatMap(convert(_, "UUID")(UUID.fromString)))
+    stringDecoder.emap(convert(_, "UUID")(UUID.fromString))
 
   implicit def mapDecoder[A, B](implicit key: ScynamoKeyDecoder[A], value: ScynamoDecoder[B]): ScynamoDecoder[Map[A, B]] =
     ScynamoDecoder.instance(_.asEither(ScynamoType.Map).flatMap { attributes =>
