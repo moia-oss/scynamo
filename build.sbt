@@ -3,8 +3,8 @@ lazy val root = project
   .configs(IntegrationTest.extend(Test))
   .enablePlugins(GitVersioning, GitBranchPrompt)
   .settings(
-    name := "scynamo",
-    organization := "io.moia",
+    name               := "scynamo",
+    organization       := "io.moia",
     crossScalaVersions := List("2.13.6", "2.12.14"),
     scalacOptions ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
@@ -14,8 +14,8 @@ lazy val root = project
       }
     },
     licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0")),
-    scmInfo := Some(ScmInfo(url("https://github.com/moia-oss/scynamo"), "scm:git@github.com:moia-oss/scynamo.git")),
-    homepage := Some(url("https://github.com/moia-oss/scynamo")),
+    scmInfo       := Some(ScmInfo(url("https://github.com/moia-oss/scynamo"), "scm:git@github.com:moia-oss/scynamo.git")),
+    homepage      := Some(url("https://github.com/moia-oss/scynamo")),
     versionScheme := Some("early-semver"),
     libraryDependencies ++= Seq(
       "org.scalatest"          %% "scalatest"               % "3.2.9"  % Test,
@@ -37,10 +37,10 @@ lazy val docs = project
   .dependsOn(root)
   .enablePlugins(MdocPlugin)
   .settings(
-    mdocVariables := Map("VERSION" -> version.value),
-    publish := {},
-    publishLocal := {},
-    publishArtifact := false,
+    mdocVariables                                   := Map("VERSION" -> version.value),
+    publish                                         := {},
+    publishLocal                                    := {},
+    publishArtifact                                 := false,
     libraryDependencies += "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.0"
   )
 
@@ -81,8 +81,8 @@ lazy val scalacOptions_2_13 = Seq(
 lazy val sbtVersionRegex = "v([0-9]+.[0-9]+.[0-9]+)-?(.*)?".r
 
 lazy val sbtGitSettings = Seq(
-  git.useGitDescribe := true,
-  git.baseVersion := "0.0.0",
+  git.useGitDescribe       := true,
+  git.baseVersion          := "0.0.0",
   git.uncommittedSignifier := None,
   git.gitTagToVersionNumber := {
     case sbtVersionRegex(v, "")         => Some(v)
@@ -100,9 +100,9 @@ lazy val scalaFmtSettings =
 lazy val sonatypeSettings = {
   import xerial.sbt.Sonatype._
   Seq(
-    publishTo := sonatypePublishTo.value,
-    sonatypeProfileName := organization.value,
-    publishMavenStyle := true,
+    publishTo              := sonatypePublishTo.value,
+    sonatypeProfileName    := organization.value,
+    publishMavenStyle      := true,
     sonatypeProjectHosting := Some(GitHubHosting("moia-oss", "scynamo", "oss-support@moia.io")),
     credentials += Credentials(Path.userHome / ".sbt" / "sonatype_credential")
   )
