@@ -34,10 +34,9 @@ trait EnumDecoderCoproductInstances {
       sv: LabelledGeneric.Aux[V, HNil],
       st: ShapelessScynamoEnumDecoder[T]
   ): ShapelessScynamoEnumDecoder[FieldType[K, V] :+: T] =
-    attributeValue => {
+    attributeValue =>
       if (attributeValue.asOption(ScynamoType.String).contains(key.value.name))
         Right(Inl(field[K](sv.from(HNil))))
       else
         st.decode(attributeValue).map(Inr(_)).leftMap(_.map(_.push(Enum(key.value.name))))
-    }
 }
