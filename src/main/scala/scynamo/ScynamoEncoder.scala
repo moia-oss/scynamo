@@ -6,13 +6,13 @@ import cats.syntax.all._
 import scynamo.StackFrame.{Index, MapKey}
 import scynamo.generic.auto.AutoDerivationUnlocked
 import scynamo.generic.{GenericScynamoEncoder, SemiautoDerivationEncoder}
-import scynamo.wrapper.YearMonthFormatter.yearMonthFormatter
+import scynamo.wrapper.DateTimeFormatters
 import shapeless._
 import shapeless.labelled.FieldType
 import shapeless.tag.@@
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
-import java.time.{Instant, YearMonth}
+import java.time._
 import java.util.UUID
 import scala.collection.compat._
 import scala.collection.immutable.Seq
@@ -27,8 +27,8 @@ trait ScynamoEncoder[A] { self =>
 object ScynamoEncoder extends DefaultScynamoEncoderInstances {
   def apply[A](implicit instance: ScynamoEncoder[A]): ScynamoEncoder[A] = instance
 
-  // SAM syntax generates anonymous classes because of non-abstract methods like `contramap`.
-  private[scynamo] def instance[A](f: A => EitherNec[ScynamoEncodeError, AttributeValue]): ScynamoEncoder[A] = f(_)
+  /** SAM syntax generates anonymous classes on Scala 2 because of non-abstract methods like `contramap`. */
+  def instance[A](encode: A => EitherNec[ScynamoEncodeError, AttributeValue]): ScynamoEncoder[A] = encode(_)
 }
 
 trait DefaultScynamoEncoderInstances extends ScynamoIterableEncoder {
@@ -104,14 +104,26 @@ trait DefaultScynamoEncoderInstances extends ScynamoIterableEncoder {
   implicit def someEncoder[A](implicit element: ScynamoEncoder[A]): ScynamoEncoder[Some[A]] =
     ScynamoEncoder.instance(some => element.encode(some.get))
 
-  implicit val finiteDurationEncoder: ScynamoEncoder[FiniteDuration] =
-    numberStringEncoder.contramap(_.toNanos.toString)
-
   implicit val durationEncoder: ScynamoEncoder[Duration] =
     numberStringEncoder.contramap(_.toNanos.toString)
 
+  implicit val finiteDurationEncoder: ScynamoEncoder[FiniteDuration] =
+    durationEncoder.narrow
+
+  implicit val javaDurationEncoder: ScynamoEncoder[java.time.Duration] =
+    numberStringEncoder.contramap(_.toNanos.toString)
+
   implicit val yearMonthEncoder: ScynamoEncoder[YearMonth] =
-    stringEncoder.contramap(_.format(yearMonthFormatter))
+    stringEncoder.contramap(_.format(DateTimeFormatters.yearMonth))
+
+  implicit val localDateEncoder: ScynamoEncoder[LocalDate] =
+    stringEncoder.contramap(_.format(DateTimeFormatters.localDate))
+
+  implicit val localDateTimeEncoder: ScynamoEncoder[LocalDateTime] =
+    stringEncoder.contramap(_.format(DateTimeFormatters.localDateTime))
+
+  implicit val zonedDateTimeEncoder: ScynamoEncoder[ZonedDateTime] =
+    stringEncoder.contramap(_.format(DateTimeFormatters.zonedDateTime))
 
   implicit def mapEncoder[A, B](implicit key: ScynamoKeyEncoder[A], value: ScynamoEncoder[B]): ScynamoEncoder[Map[A, B]] =
     ScynamoEncoder.instance { kvs =>

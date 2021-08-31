@@ -7,8 +7,8 @@ import scynamo.generic.semiauto._
 import scynamo.wrapper.{ScynamoNumberSet, ScynamoStringSet}
 import shapeless.tag
 
-import java.time.{Instant, YearMonth}
 import java.time.temporal.ChronoUnit
+import java.time._
 import java.util.UUID
 import scala.concurrent.duration.Duration
 
@@ -83,18 +83,23 @@ class ScynamoCodecProps extends Properties("ScynamoCodec") {
   propertyWithSeed("decode.encode === id (option)", propertySeed) = Prop.forAll { value: Option[Int] => decodeAfterEncodeIsIdentity(value) }
 
   propertyWithSeed("decode.encode === id (finite duration)", propertySeed) =
-    Prop.forAll(Gen.chooseNum[Long](-9223372036854775807L, 9223372036854775807L)) { value: Long =>
+    Prop.forAll(Gen.chooseNum(-9223372036854775807L, 9223372036854775807L)) { value =>
       decodeAfterEncodeIsIdentity(Duration.fromNanos(value))
     }
 
   propertyWithSeed("decode.encode === id (duration)", propertySeed) =
-    Prop.forAll(Gen.chooseNum[Long](-9223372036854775807L, 9223372036854775807L)) { value: Long =>
+    Prop.forAll(Gen.chooseNum(-9223372036854775807L, 9223372036854775807L)) { value =>
       decodeAfterEncodeIsIdentity(Duration.fromNanos(value): Duration)
     }
 
-  propertyWithSeed("decode.encode === id (year month)", propertySeed) = Prop.forAll { value: YearMonth =>
-    decodeAfterEncodeIsIdentity(value)
+  propertyWithSeed("decode.encode === id (java duration)", propertySeed) = Prop.forAll { value: Long =>
+    decodeAfterEncodeIsIdentity(java.time.Duration.ofNanos(value))
   }
+
+  propertyWithSeed("decode.encode === id (year month)", propertySeed) = Prop.forAll(decodeAfterEncodeIsIdentity[YearMonth](_))
+  propertyWithSeed("decode.encode === id (local date)", propertySeed) = Prop.forAll(decodeAfterEncodeIsIdentity[LocalDate](_))
+  propertyWithSeed("decode.encode === id (local date time)", propertySeed) = Prop.forAll(decodeAfterEncodeIsIdentity[LocalDateTime](_))
+  propertyWithSeed("decode.encode === id (zoned date time)", propertySeed) = Prop.forAll(decodeAfterEncodeIsIdentity[ZonedDateTime](_))
 
   propertyWithSeed("decode.encode === id (case class)", propertySeed) = Prop.forAll { value: Int =>
     decodeAfterEncodeIsIdentity(ScynamoCodecProps.Foo(value))
