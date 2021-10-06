@@ -176,7 +176,7 @@ trait ScynamoIterableEncoder extends LowestPrioAutoEncoder {
 }
 
 trait LowestPrioAutoEncoder {
-  final implicit def autoDerivedScynamoEncoder[A: AutoDerivationUnlocked](implicit
+  implicit final def autoDerivedScynamoEncoder[A: AutoDerivationUnlocked](implicit
       genericEncoder: Lazy[GenericScynamoEncoder[A]]
   ): ObjectScynamoEncoder[A] =
     scynamo.generic.semiauto.deriveScynamoEncoder[A]

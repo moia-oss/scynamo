@@ -42,8 +42,8 @@ class ScynamoTest extends UnitTest {
 
       val result = for {
         encodedInput <- input.encodedMap
-        response = GetItemResponse.builder().item(encodedInput).build()
-        result <- Scynamo.decodeGetItemResponse[Map[String, String]](response)
+        response      = GetItemResponse.builder().item(encodedInput).build()
+        result       <- Scynamo.decodeGetItemResponse[Map[String, String]](response)
       } yield result
 
       result should ===(Right(Some(input)))
@@ -56,8 +56,8 @@ class ScynamoTest extends UnitTest {
       val result = for {
         encodedInput1 <- input1.encodedMap
         encodedInput2 <- input2.encodedMap
-        response = QueryResponse.builder().items(encodedInput1, encodedInput2).build()
-        result <- Scynamo.decodeQueryResponse[Map[String, String]](response)
+        response       = QueryResponse.builder().items(encodedInput1, encodedInput2).build()
+        result        <- Scynamo.decodeQueryResponse[Map[String, String]](response)
       } yield result
       result should ===(Right(List(input1, input2)))
     }
@@ -69,8 +69,8 @@ class ScynamoTest extends UnitTest {
       val result = for {
         encodedInput1 <- input1.encodedMap
         encodedInput2 <- input2.encodedMap
-        response = ScanResponse.builder().items(encodedInput1, encodedInput2).build()
-        result <- Scynamo.decodeScanResponse[Map[String, String]](response)
+        response       = ScanResponse.builder().items(encodedInput1, encodedInput2).build()
+        result        <- Scynamo.decodeScanResponse[Map[String, String]](response)
       } yield result
       result should ===(Right(List(input1, input2)))
     }
