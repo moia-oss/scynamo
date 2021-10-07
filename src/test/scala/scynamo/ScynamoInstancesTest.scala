@@ -21,7 +21,7 @@ class ScynamoInstancesTest extends AnyFunSuite with Checkers with FunSuiteDiscip
   import ScynamoInstancesTest.ArbitraryError
   type AttributeMap = java.util.Map[String, AttributeValue]
 
-  override implicit val generatorDrivenConfig: PropertyCheckConfiguration =
+  implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     checkConfiguration
 
   implicit def arbitraryJavaMap[K: Arbitrary, V: Arbitrary]: Arbitrary[java.util.Map[K, V]] =

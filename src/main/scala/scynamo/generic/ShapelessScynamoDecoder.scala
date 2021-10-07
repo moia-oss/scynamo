@@ -60,9 +60,8 @@ trait DecoderCoproductInstances extends ScynamoDecoderFunctions {
   ): ShapelessScynamoDecoder[Base, FieldType[K, V] :+: T] = { attributes =>
     val name = opts.transform(key.value.name)
     for {
-      typeTagAttrValue <- Option(attributes.get(opts.discriminator))
-        .toRightNec(ScynamoDecodeError.missingField(name, attributes))
-      typeTag <- typeTagAttrValue.asEither(ScynamoType.String)
+      typeTagAttrValue <- Option(attributes.get(opts.discriminator)).toRightNec(ScynamoDecodeError.missingField(name, attributes))
+      typeTag          <- typeTagAttrValue.asEither(ScynamoType.String)
       result <-
         if (name == typeTag) {
           val attr = AttributeValue.builder.m(attributes).build()

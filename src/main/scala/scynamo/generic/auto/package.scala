@@ -5,4 +5,4 @@ package object auto {
   implicit val unlocker: AutoDerivationUnlocker = new AutoDerivationUnlocker {}
 }
 
-private[scynamo] sealed abstract class AutoDerivationUnlocker
+sealed abstract private[scynamo] class AutoDerivationUnlocker
