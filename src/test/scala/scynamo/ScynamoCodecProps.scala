@@ -82,15 +82,15 @@ class ScynamoCodecProps extends Properties("ScynamoCodec") {
 
   propertyWithSeed("decode.encode === id (option)", propertySeed) = Prop.forAll { value: Option[Int] => decodeAfterEncodeIsIdentity(value) }
 
-  propertyWithSeed("decode.encode === id (finite duration)", propertySeed) =
-    Prop.forAll(Gen.chooseNum(-9223372036854775807L, 9223372036854775807L)) { value =>
+  propertyWithSeed("decode.encode === id (finite duration)", propertySeed) = Prop.forAll(Gen.chooseNum(Long.MinValue + 1, Long.MaxValue)) {
+    value: Long =>
       decodeAfterEncodeIsIdentity(Duration.fromNanos(value))
-    }
+  }
 
-  propertyWithSeed("decode.encode === id (duration)", propertySeed) =
-    Prop.forAll(Gen.chooseNum(-9223372036854775807L, 9223372036854775807L)) { value =>
+  propertyWithSeed("decode.encode === id (duration)", propertySeed) = Prop.forAll(Gen.chooseNum(Long.MinValue + 1, Long.MaxValue)) {
+    value: Long =>
       decodeAfterEncodeIsIdentity(Duration.fromNanos(value): Duration)
-    }
+  }
 
   propertyWithSeed("decode.encode === id (java duration)", propertySeed) = Prop.forAll { value: Long =>
     decodeAfterEncodeIsIdentity(java.time.Duration.ofNanos(value))

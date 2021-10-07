@@ -17,6 +17,15 @@ class ScynamoTest extends UnitTest {
       result should ===(Right(None))
     }
 
+    "return None if the update item response has no item" in {
+      val response = UpdateItemResponse.builder().build()
+      val result = for {
+        result <- Scynamo.decodeUpdateItemResponse[Map[String, AttributeValue]](response)
+      } yield result
+
+      result should ===(Right(None))
+    }
+
     "return an empty List if the query response has no items" in {
       val response = QueryResponse.builder().build()
 
@@ -37,13 +46,25 @@ class ScynamoTest extends UnitTest {
       result should ===(Right(List.empty))
     }
 
-    "return the decoded result if it has an item that is well formed" in {
+    "return the decoded get item result if it has an item that is well formed" in {
       val input = Map("foo" -> "bar")
 
       val result = for {
         encodedInput <- input.encodedMap
         response      = GetItemResponse.builder().item(encodedInput).build()
         result       <- Scynamo.decodeGetItemResponse[Map[String, String]](response)
+      } yield result
+
+      result should ===(Right(Some(input)))
+    }
+
+    "return the decoded update item result if it has an item that is well formed" in {
+      val input = Map("foo" -> "bar")
+
+      val result = for {
+        encodedInput <- input.encodedMap
+        response = UpdateItemResponse.builder().attributes(encodedInput).build()
+        result <- Scynamo.decodeUpdateItemResponse[Map[String, String]](response)
       } yield result
 
       result should ===(Right(Some(input)))
