@@ -63,8 +63,8 @@ class ScynamoTest extends UnitTest {
 
       val result = for {
         encodedInput <- input.encodedMap
-        response = UpdateItemResponse.builder().attributes(encodedInput).build()
-        result <- Scynamo.decodeUpdateItemResponse[Map[String, String]](response)
+        response      = UpdateItemResponse.builder().attributes(encodedInput).build()
+        result       <- Scynamo.decodeUpdateItemResponse[Map[String, String]](response)
       } yield result
 
       result should ===(Right(Some(input)))
