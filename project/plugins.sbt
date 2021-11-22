@@ -1,4 +1,4 @@
-addSbtPlugin("org.scalameta"    % "sbt-scalafmt"    % "2.4.3")
+addSbtPlugin("org.scalameta"    % "sbt-scalafmt"    % "2.4.4")
 addSbtPlugin("com.typesafe.sbt" % "sbt-git"         % "1.0.2")
 addSbtPlugin("org.scalameta"    % "sbt-mdoc"        % "2.2.24")
 addSbtPlugin("org.xerial.sbt"   % "sbt-sonatype"    % "3.9.10")
