@@ -19,12 +19,12 @@ lazy val root = project
     versionScheme := Some("early-semver"),
     libraryDependencies ++= Seq(
       "org.scalatest"          %% "scalatest"               % "3.2.11" % Test,
-      "com.chuusai"            %% "shapeless"               % "2.3.8",
+      "com.chuusai"            %% "shapeless"               % "2.3.9",
       "software.amazon.awssdk"  % "dynamodb"                % "2.17.157",
       "org.typelevel"          %% "cats-core"               % "2.7.0",
       "org.typelevel"          %% "cats-testkit-scalatest"  % "2.1.5"  % Test,
       "org.scalacheck"         %% "scalacheck"              % "1.15.4" % Test,
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.6.0"
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.7.0"
     )
   )
   .settings(sbtGitSettings)
