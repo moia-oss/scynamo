@@ -8,8 +8,8 @@ lazy val root = project
     crossScalaVersions := List("2.13.8", "2.12.15"),
     scalacOptions ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some(2, 12) => scalacOptions_2_12
-        case Some(2, 13) => scalacOptions_2_13
+        case Some((2, 12)) => scalacOptions_2_12
+        case Some((2, 13)) => scalacOptions_2_13
         case _           => Seq()
       }
     },
@@ -78,7 +78,7 @@ lazy val scalacOptions_2_13 = Seq(
   "-Xsource:3"
 )
 
-lazy val sbtVersionRegex = "v([0-9]+.[0-9]+.[0-9]+)-?(.*)?".r
+lazy val sbtVersionRegex = "v(\\d+.\\d+.\\d+)-?(.*)?".r
 
 lazy val sbtGitSettings = Seq(
   git.useGitDescribe       := true,
