@@ -41,7 +41,7 @@ lazy val docs = project
     publish                                         := {},
     publishLocal                                    := {},
     publishArtifact                                 := false,
-    libraryDependencies += "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.0"
+    libraryDependencies += "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2"
   )
 
 lazy val scalacOptions_2_12 = Seq(
