@@ -10,7 +10,7 @@ lazy val root = project
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, 12)) => scalacOptions_2_12
         case Some((2, 13)) => scalacOptions_2_13
-        case _           => Seq()
+        case _             => Seq()
       }
     },
     licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0")),
