@@ -8,8 +8,8 @@ lazy val root = project
     crossScalaVersions := List("2.13.8", "2.12.15"),
     scalacOptions ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, 12)) => scalacOptions_2_12
-        case Some((2, 13)) => scalacOptions_2_13
+        case Some(2, 12) => scalacOptions_2_12
+        case Some(2, 13) => scalacOptions_2_13
         case _           => Seq()
       }
     },
@@ -20,7 +20,7 @@ lazy val root = project
     libraryDependencies ++= Seq(
       "org.scalatest"          %% "scalatest"               % "3.2.12" % Test,
       "com.chuusai"            %% "shapeless"               % "2.3.9",
-      "software.amazon.awssdk"  % "dynamodb"                % "2.17.191",
+      "software.amazon.awssdk"  % "dynamodb"                % "2.17.196",
       "org.typelevel"          %% "cats-core"               % "2.7.0",
       "org.typelevel"          %% "cats-testkit-scalatest"  % "2.1.5"  % Test,
       "org.scalacheck"         %% "scalacheck"              % "1.16.0" % Test,
