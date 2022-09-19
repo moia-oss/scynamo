@@ -5,7 +5,7 @@ lazy val root = project
   .settings(
     name               := "scynamo",
     organization       := "io.moia",
-    crossScalaVersions := List("2.13.8", "2.12.16"),
+    crossScalaVersions := List("2.13.8", "2.12.17"),
     scalacOptions ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, 12)) => scalacOptions_2_12
@@ -19,11 +19,11 @@ lazy val root = project
     versionScheme := Some("early-semver"),
     libraryDependencies ++= Seq(
       "org.scalatest"          %% "scalatest"               % "3.2.13" % Test,
-      "com.chuusai"            %% "shapeless"               % "2.3.9",
+      "com.chuusai"            %% "shapeless"               % "2.3.10",
       "software.amazon.awssdk"  % "dynamodb"                % "2.17.276",
       "org.typelevel"          %% "cats-core"               % "2.8.0",
       "org.typelevel"          %% "cats-testkit-scalatest"  % "2.1.5"  % Test,
-      "org.scalacheck"         %% "scalacheck"              % "1.16.0" % Test,
+      "org.scalacheck"         %% "scalacheck"              % "1.17.0" % Test,
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.8.1"
     )
   )
