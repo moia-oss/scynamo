@@ -5,7 +5,7 @@ lazy val root = project
   .settings(
     name               := "scynamo",
     organization       := "io.moia",
-    crossScalaVersions := List("2.13.8", "2.12.17"),
+    crossScalaVersions := List("2.13.9", "2.12.17"),
     scalacOptions ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, 12)) => scalacOptions_2_12
@@ -48,7 +48,8 @@ lazy val scalacOptions_2_12 = Seq(
   "-unchecked",
   "-deprecation",
   "-language:_",
-  "-target:jvm-1.8",
+  "-release",
+  "8",
   "-encoding",
   "UTF-8",
   "-Xfatal-warnings",
@@ -67,7 +68,8 @@ lazy val scalacOptions_2_13 = Seq(
   "-unchecked",
   "-deprecation",
   "-language:_",
-  "-target:jvm-1.8",
+  "-release",
+  "8",
   "-encoding",
   "UTF-8",
   "-Xfatal-warnings",
