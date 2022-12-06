@@ -8,7 +8,7 @@ permissions:
 jobs:
   scala-steward-auto-merge:
     runs-on: ubuntu-latest
-    if: ${{ github.actor == 'scala-steward-for-moia[bot]' }}
+    if: ${{ github.actor == 'scala-steward-for-moia' }}
     steps:
       - name: Enable auto-merge for Scala Steward PRs
         run: gh pr merge --auto --squash "$PR_URL"
