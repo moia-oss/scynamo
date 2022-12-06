@@ -1,4 +1,4 @@
-name: Dependabot auto-merge
+name: Scala Steward automatic merge
 on: pull_request
 
 permissions:
@@ -6,13 +6,12 @@ permissions:
   pull-requests: write
 
 jobs:
-  dependabot:
+  scala-steward-auto-merge:
     runs-on: ubuntu-latest
-    if: ${{ github.actor == 'scala-steward-for-moia[bot]' || github.actor == 'houcros' }}
+    if: ${{ github.actor == 'scala-steward-for-moia[bot]' }}
     steps:
       - name: Enable auto-merge for Scala Steward PRs
         run: gh pr merge --auto --squash "$PR_URL"
         env:
           PR_URL: ${{github.event.pull_request.html_url}}
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-
