@@ -18,7 +18,7 @@ lazy val root = project
     homepage      := Some(url("https://github.com/moia-oss/scynamo")),
     versionScheme := Some("early-semver"),
     libraryDependencies ++= Seq(
-      "org.scalatest"          %% "scalatest"               % "3.2.14" % Test,
+      "org.scalatest"          %% "scalatest"               % "3.2.15" % Test,
       "com.chuusai"            %% "shapeless"               % "2.3.10",
       "software.amazon.awssdk"  % "dynamodb"                % "2.19.12",
       "org.typelevel"          %% "cats-core"               % "2.9.0",
