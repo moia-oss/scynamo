@@ -47,7 +47,7 @@ class ScynamoCodecProps extends Properties("ScynamoCodec") {
   }
 
   propertyWithSeed("decode.encode === id (nonempty string)", propertySeed) =
-    Prop.forAll(Gen.nonEmptyListOf(Gen.alphaNumChar).map(_.mkString)) { (value: String) => decodeAfterEncodeIsIdentity(value) }
+    Prop.forAll(Gen.nonEmptyListOf(Gen.alphaNumChar).map(_.mkString))((value: String) => decodeAfterEncodeIsIdentity(value))
 
   property("decode.encode === id (empty string)") = decodeAfterEncodeIsIdentity("")
 
@@ -80,7 +80,9 @@ class ScynamoCodecProps extends Properties("ScynamoCodec") {
     decodeAfterEncodeIsIdentity(value)
   }
 
-  propertyWithSeed("decode.encode === id (option)", propertySeed) = Prop.forAll { (value: Option[Int]) => decodeAfterEncodeIsIdentity(value) }
+  propertyWithSeed("decode.encode === id (option)", propertySeed) = Prop.forAll { (value: Option[Int]) =>
+    decodeAfterEncodeIsIdentity(value)
+  }
 
   propertyWithSeed("decode.encode === id (finite duration)", propertySeed) = Prop.forAll(Gen.chooseNum(Long.MinValue + 1, Long.MaxValue)) {
     (value: Long) =>
@@ -144,11 +146,11 @@ class ScynamoCodecProps extends Properties("ScynamoCodec") {
 
   propertyWithSeed("decode.encode === id (number set, bigint)", propertySeed) = Prop.forAll(
     Gen.nonEmptyListOf(bigIntGen).map(_.toSet).map(ScynamoNumberSet(_))
-  ) { (value: ScynamoNumberSet[BigInt]) => decodeAfterEncodeIsIdentity(value) }
+  )((value: ScynamoNumberSet[BigInt]) => decodeAfterEncodeIsIdentity(value))
 
   propertyWithSeed("decode.encode === id (number set, bigdecimal)", propertySeed) = Prop.forAll(
     Gen.nonEmptyListOf(bigDecimalGen).map(_.toSet).map(ScynamoNumberSet(_))
-  ) { (value: ScynamoNumberSet[BigDecimal]) => decodeAfterEncodeIsIdentity(value) }
+  )((value: ScynamoNumberSet[BigDecimal]) => decodeAfterEncodeIsIdentity(value))
 
   propertyWithSeed("decode.encode === id (string set)", propertySeed) =
     Prop.forAll(Gen.nonEmptyListOf(Gen.numStr).map(_.toSet).map(ScynamoStringSet(_))) { (value: ScynamoStringSet) =>
