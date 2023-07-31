@@ -20,7 +20,7 @@ lazy val root = project
     libraryDependencies ++= Seq(
       "org.scalatest"          %% "scalatest"               % "3.2.16" % Test,
       "com.chuusai"            %% "shapeless"               % "2.3.10",
-      "software.amazon.awssdk"  % "dynamodb"                % "2.20.109",
+      "software.amazon.awssdk"  % "dynamodb"                % "2.20.115",
       "org.typelevel"          %% "cats-core"               % "2.9.0",
       "org.typelevel"          %% "cats-testkit-scalatest"  % "2.1.5"  % Test,
       "org.scalacheck"         %% "scalacheck"              % "1.17.0" % Test,
