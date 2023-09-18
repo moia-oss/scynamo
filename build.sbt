@@ -5,7 +5,7 @@ lazy val root = project
   .settings(
     name               := "scynamo",
     organization       := "io.moia",
-    crossScalaVersions := List("2.13.11", "2.12.18"),
+    crossScalaVersions := List("2.13.12", "2.12.18"),
     scalacOptions ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, 12)) => scalacOptions_2_12
