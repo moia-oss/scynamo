@@ -1,6 +1,5 @@
 lazy val root = project
   .in(file("."))
-  .configs(IntegrationTest.extend(Test))
   .enablePlugins(GitVersioning, GitBranchPrompt)
   .settings(
     name               := "scynamo",
@@ -94,10 +93,9 @@ lazy val sbtGitSettings = Seq(
   }
 )
 
-lazy val scalaFmtSettings =
-  Seq(
-    scalafmtOnCompile := true
-  ) ++ inConfig(IntegrationTest.extend(Test))(org.scalafmt.sbt.ScalafmtPlugin.scalafmtConfigSettings)
+lazy val scalaFmtSettings = Seq(
+  scalafmtOnCompile := true
+)
 
 lazy val sonatypeSettings = {
   import xerial.sbt.Sonatype._
