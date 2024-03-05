@@ -24,7 +24,7 @@ class ScynamoCodecTest extends UnitTest {
       case class Bar(someBoolean: Boolean)
       case class Foo(someString: String, someNumber: Int, someBar: Bar)
 
-      val input = Foo("theString", 42, Bar(true))
+      val input = Foo("theString", 42, Bar(someBoolean = true))
 
       val result = for {
         encoded <- ObjectScynamoCodec[Foo].encode(input)
