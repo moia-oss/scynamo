@@ -1,6 +1,5 @@
 lazy val root = project
   .in(file("."))
-  .configs(IntegrationWithTest)
   .enablePlugins(GitVersioning, GitBranchPrompt)
   .settings(
     name               := "scynamo",
@@ -43,13 +42,6 @@ lazy val docs = project
     publishArtifact                                 := false,
     libraryDependencies += "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2"
   )
-
-/** Introduce a configuration for integration test. The default configuration uses the compile scope and can not see test classes. With this
-  * scope in place, integration tests can also use test classes.
-  */
-lazy val IntegrationWithTest     = config("it").extend(Test)
-lazy val integrationTestSettings = inConfig(IntegrationWithTest)(integrationTestConfig)
-lazy val integrationTestConfig   = Defaults.configSettings ++ Defaults.testTasks ++ org.scalafmt.sbt.ScalafmtPlugin.scalafmtConfigSettings
 
 lazy val scalacOptions_2_12 = Seq(
   "-unchecked",
