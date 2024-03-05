@@ -31,7 +31,7 @@ class ScynamoInstancesTest extends AnyFunSuite with Checkers with FunSuiteDiscip
     Cogen[Map[K, V]].contramap(_.asScala.toMap)
 
   implicit val arbitraryThrowable: Arbitrary[Throwable] =
-    Arbitrary(Arbitrary.arbitrary[String].map(ArbitraryError))
+    Arbitrary(Arbitrary.arbitrary[String].map(ArbitraryError.apply))
 
   val primitiveAttributeValueGen: Gen[AttributeValue] = {
     def attr[A](f: (AttributeValue.Builder, A) => AttributeValue.Builder): A => AttributeValue =
