@@ -23,7 +23,7 @@ lazy val root = project
       "org.typelevel"          %% "cats-core"               % "2.10.0",
       "org.typelevel"          %% "cats-testkit-scalatest"  % "2.1.5"  % Test,
       "org.scalacheck"         %% "scalacheck"              % "1.17.0" % Test,
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.11.0"
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.12.0"
     )
   )
   .settings(sbtGitSettings)
