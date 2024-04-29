@@ -22,7 +22,7 @@ lazy val root = project
       "software.amazon.awssdk"  % "dynamodb"                % "2.25.35",
       "org.typelevel"          %% "cats-core"               % "2.10.0",
       "org.typelevel"          %% "cats-testkit-scalatest"  % "2.1.5"  % Test,
-      "org.scalacheck"         %% "scalacheck"              % "1.17.1" % Test,
+      "org.scalacheck"         %% "scalacheck"              % "1.18.0" % Test,
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.12.0"
     )
   )
