@@ -18,7 +18,7 @@ lazy val root = project
     versionScheme := Some("early-semver"),
     libraryDependencies ++= Seq(
       "org.scalatest"          %% "scalatest"               % "3.2.18" % Test,
-      "com.chuusai"            %% "shapeless"               % "2.3.10",
+      "com.chuusai"            %% "shapeless"               % "2.3.12",
       "software.amazon.awssdk"  % "dynamodb"                % "2.25.50",
       "org.typelevel"          %% "cats-core"               % "2.10.0",
       "org.typelevel"          %% "cats-testkit-scalatest"  % "2.1.5"  % Test,
