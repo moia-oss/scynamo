@@ -15,6 +15,7 @@ jobs:
             ~/.sbt
             ~/.cache/coursier/v1
           key: ${{ runner.os }}-sbt-ivy-cache-${{ hashFiles('**/build.sbt') }}-${{ hashFiles('**/plugins.sbt') }}-${{ hashFiles('**/build.properties') }}
+      - uses: sbt/setup-sbt@v1
       - name: Check formatting
         run: sbt scalafmtCheckAll
 
@@ -31,5 +32,6 @@ jobs:
             ~/.sbt
             ~/.cache/coursier/v1
           key: ${{ runner.os }}-sbt-ivy-cache-${{ hashFiles('**/build.sbt') }}-${{ hashFiles('**/plugins.sbt') }}-${{ hashFiles('**/build.properties') }}
+      - uses: sbt/setup-sbt@v1
       - name: Compile and test
         run: sbt docs/mdoc +test +doc version +mimaReportBinaryIssues
