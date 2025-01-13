@@ -36,9 +36,8 @@ class DslTest extends UnitTest {
 
       val input = ScynamoStringSet(Set())
 
-      an[IllegalArgumentException] should be thrownBy {
+      an[IllegalArgumentException] should be thrownBy
         input.encodedUnsafe
-      }
     }
   }
 }
