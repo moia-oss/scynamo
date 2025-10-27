@@ -93,7 +93,7 @@ class ScynamoCodecTest extends UnitTest {
 
       val error = NonEmptyChain.one(ScynamoDecodeError.generalError(s"Unknown tag", None))
       val codec = ScynamoCodec[String].itransform[Foobar] {
-        case Left(value) => Left(value)
+        case Left(value)  => Left(value)
         case Right(value) =>
           value match {
             case "Foo" => Right(Foo)
