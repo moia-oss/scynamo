@@ -10,7 +10,7 @@ class ScynamoTest extends UnitTest {
   "Scynamo" should {
     "return None if the get item response has no item" in {
       val response = GetItemResponse.builder().build()
-      val result = for {
+      val result   = for {
         result <- Scynamo.decodeGetItemResponse[Map[String, AttributeValue]](response)
       } yield result
 
@@ -19,7 +19,7 @@ class ScynamoTest extends UnitTest {
 
     "return None if the update item response has no item" in {
       val response = UpdateItemResponse.builder().build()
-      val result = for {
+      val result   = for {
         result <- Scynamo.decodeUpdateItemResponse[Map[String, AttributeValue]](response)
       } yield result
 

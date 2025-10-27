@@ -187,7 +187,7 @@ object ScynamoCodecProps {
   object Shape {
     implicit val instance: ObjectScynamoCodec[Shape] = deriveScynamoCodec[Shape]
     val squareGen: Gen[Square]                       = Gen.posNum[Int].map(Square(_))
-    val rectangleGen: Gen[Rectangle] = for {
+    val rectangleGen: Gen[Rectangle]                 = for {
       w <- Gen.posNum[Int]
       h <- Gen.posNum[Int]
     } yield Rectangle(w, h)

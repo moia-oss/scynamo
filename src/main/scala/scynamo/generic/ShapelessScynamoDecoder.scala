@@ -25,7 +25,7 @@ trait DecoderHListInstances extends ScynamoDecoderFunctions {
   ): ShapelessScynamoDecoder[Base, FieldType[K, V] :: T] = { attributes =>
     val fieldName      = opts.transform(key.value.name)
     val fieldAttrValue = Option(attributes.get(fieldName))
-    val decodedHead = (fieldAttrValue, sv.defaultValue) match {
+    val decodedHead    = (fieldAttrValue, sv.defaultValue) match {
       case (Some(field), _)      => StackFrame.decoding(sv.decode(field), Attr(fieldName))
       case (None, Some(default)) => Right(default)
       case (None, None)          => Either.leftNec(ScynamoDecodeError.missingField(fieldName, attributes))
@@ -62,7 +62,7 @@ trait DecoderCoproductInstances extends ScynamoDecoderFunctions {
     for {
       typeTagAttrValue <- Option(attributes.get(opts.discriminator)).toRightNec(ScynamoDecodeError.missingField(name, attributes))
       typeTag          <- typeTagAttrValue.asEither(ScynamoType.String)
-      result <-
+      result           <-
         if (name == typeTag) {
           val attr = AttributeValue.builder.m(attributes).build()
           StackFrame.decoding(sv.value.decode(attr).map(v => Inl(field[K](v))), Case(name))

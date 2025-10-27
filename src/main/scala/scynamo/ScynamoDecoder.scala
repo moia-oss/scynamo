@@ -123,7 +123,7 @@ trait DefaultScynamoDecoderInstances extends ScynamoDecoderFunctions with Scynam
 
   implicit def optionDecoder[A](implicit element: ScynamoDecoder[A]): ScynamoDecoder[Option[A]] =
     new ScynamoDecoder[Option[A]] {
-      override val defaultValue: Option[Option[A]] = Some(None)
+      override val defaultValue: Option[Option[A]]                                                  = Some(None)
       override def decode(attributeValue: AttributeValue): EitherNec[ScynamoDecodeError, Option[A]] =
         if (attributeValue.nul) rightNone else element.decode(attributeValue).map(Some.apply)
     }

@@ -82,9 +82,9 @@ lazy val scalacOptions_2_13 = Seq(
 lazy val sbtVersionRegex = "v(\\d+.\\d+.\\d+)-?(.*)?".r
 
 lazy val sbtGitSettings = Seq(
-  git.useGitDescribe       := true,
-  git.baseVersion          := "0.0.0",
-  git.uncommittedSignifier := None,
+  git.useGitDescribe        := true,
+  git.baseVersion           := "0.0.0",
+  git.uncommittedSignifier  := None,
   git.gitTagToVersionNumber := {
     case sbtVersionRegex(v, "")         => Some(v)
     case sbtVersionRegex(v, "SNAPSHOT") => Some(s"$v-SNAPSHOT")

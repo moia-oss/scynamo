@@ -69,7 +69,7 @@ object ScynamoEncodeError {
   def generalError(message: String, cause: Option[Throwable]): GeneralError = GeneralError(message, cause, ErrorStack.empty)
 
   implicit val scynamoEncoderErrorShow: Show[ScynamoEncodeError] = {
-    case InvalidEmptyValue(typ, stack) => s"DynamoDB does not support encoding the empty value of type $typ, error stack: $stack."
+    case InvalidEmptyValue(typ, stack)       => s"DynamoDB does not support encoding the empty value of type $typ, error stack: $stack."
     case GeneralError(message, cause, stack) =>
       s"General encoder error: $message${cause.fold("")(e => s" with cause: ${e.getMessage}")}, stack: $stack."
   }
@@ -119,7 +119,7 @@ object ScynamoDecodeError {
     case TypeMismatch(expected, attributeValue, stack) => s"Type mismatch, expected type $expected, given: $attributeValue, stack: $stack."
     case InvalidCoproductCaseMap(hmap, stack)          => s"Could not decode into one of the sealed trait's cases: $hmap, stack: $stack."
     case InvalidCoproductCaseAttr(av, stack)           => s"Could not decode into one of the sealed trait's cases: $av, stack: $stack."
-    case ConversionError(in, to, eOpt, stack) =>
+    case ConversionError(in, to, eOpt, stack)          =>
       s"Error during conversion of '$in' to $to${eOpt.fold("")(e => s" cause: ${e.getMessage}")}, stack: $stack."
     case GeneralError(message, cause, stack) =>
       s"General decoder error: $message${cause.fold("")(e => s" with cause: ${e.getMessage}")}, stack: $stack."
