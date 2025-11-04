@@ -76,6 +76,7 @@ lazy val scalacOptions_2_13 = Seq(
   "-Ymacro-annotations",
   "-Xlint:_,-byname-implicit,-unused",
   "-Wunused:_,-imports,-synthetics",
+  """-Wconf:cat=lint-overload&site=scynamo\..*\.catsInstances:s""",
   "-Xsource:3"
 )
 
