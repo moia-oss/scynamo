@@ -4,7 +4,7 @@ lazy val root = project
   .settings(
     name               := "scynamo",
     organization       := "io.moia",
-    crossScalaVersions := List("2.13.16", "2.12.20"),
+    crossScalaVersions := List("2.13.17", "2.12.20"),
     scalacOptions ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, 12)) => scalacOptions_2_12
@@ -76,6 +76,7 @@ lazy val scalacOptions_2_13 = Seq(
   "-Ymacro-annotations",
   "-Xlint:_,-byname-implicit,-unused",
   "-Wunused:_,-imports,-synthetics",
+  """-Wconf:cat=lint-overload&site=scynamo\..*\.catsInstances:s""",
   "-Xsource:3"
 )
 
