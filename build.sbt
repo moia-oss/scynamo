@@ -98,16 +98,17 @@ lazy val scalaFmtSettings = Seq(
   scalafmtOnCompile := true
 )
 
-lazy val sonatypeSettings = {
-  import xerial.sbt.Sonatype._
-  Seq(
-    publishTo              := sonatypePublishTo.value,
-    sonatypeProfileName    := organization.value,
-    publishMavenStyle      := true,
-    sonatypeProjectHosting := Some(GitHubHosting("moia-oss", "scynamo", "oss-support@moia.io")),
-    credentials += Credentials(Path.userHome / ".sbt" / "sonatype_credential")
-  )
-}
+// Reference: https://www.scala-sbt.org/1.x/docs/Using-Sonatype.html
+lazy val sonatypeSettings = Seq(
+  publishTo := {
+    if (isSnapshot.value) Some("central-snapshots".at("https://central.sonatype.com/repository/maven-snapshots/"))
+    else localStaging.value
+  },
+  // Remove all additional repository other than Maven Central from POM
+  pomIncludeRepository := { _ => false },
+  publishMavenStyle    := true,
+  credentials += Credentials(Path.userHome / ".sbt" / "sonatype_credential")
+)
 
 lazy val mimaSettings = Seq(
   mimaPreviousArtifacts := Set.empty
