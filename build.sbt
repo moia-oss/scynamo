@@ -107,6 +107,14 @@ lazy val sonatypeSettings = Seq(
   // Remove all additional repository other than Maven Central from POM
   pomIncludeRepository := { _ => false },
   publishMavenStyle    := true,
+  developers := List(
+    Developer(
+      id = "Ignacio Lucero",
+      name = "Ignacio Lucero",
+      email = "ignacio.lucero@moia.io",
+      url = url("http://moia.io")
+    )
+  ),
   credentials += Credentials(Path.userHome / ".sbt" / "sonatype_credential")
 )
 

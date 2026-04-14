@@ -12,5 +12,5 @@ To publish a release to Maven Central follow these steps:
    Note that your Sonatype credentials needs to be configured on your machine and you need to have access writes to publish artifacts to the group id `io.moia`.
 3. Release artifact to Maven Central with:
    ```
-   sbt +sonatypeRelease
+   sbt +sonaRelease
    ```
