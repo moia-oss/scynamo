@@ -1,3 +1,5 @@
+ThisBuild / scalaVersion := "2.13.18"
+
 lazy val root = project
   .in(file("."))
   .enablePlugins(GitVersioning, GitBranchPrompt)
@@ -12,9 +14,9 @@ lazy val root = project
         case _             => Seq()
       }
     },
-    licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0")),
-    scmInfo       := Some(ScmInfo(url("https://github.com/moia-oss/scynamo"), "scm:git@github.com:moia-oss/scynamo.git")),
-    homepage      := Some(url("https://github.com/moia-oss/scynamo")),
+    licenses += ("Apache-2.0", uri("http://www.apache.org/licenses/LICENSE-2.0")),
+    scmInfo       := Some(ScmInfo(uri("https://github.com/moia-oss/scynamo"), "scm:git@github.com:moia-oss/scynamo.git")),
+    homepage      := Some(uri("https://github.com/moia-oss/scynamo")),
     versionScheme := Some("early-semver"),
     libraryDependencies ++= Seq(
       "org.scalatest"          %% "scalatest"               % "3.2.20" % Test,
@@ -112,7 +114,7 @@ lazy val sonatypeSettings = Seq(
       id = "Ignacio Lucero",
       name = "Ignacio Lucero",
       email = "ignacio.lucero@moia.io",
-      url = url("http://moia.io")
+      url = uri("http://moia.io")
     )
   ),
   credentials += Credentials(Path.userHome / ".sbt" / "sonatype_credential")
