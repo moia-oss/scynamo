@@ -1,8 +1,15 @@
-# Set update schedule for GitHub Actions
 version: 2
 updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      # Check for updates to GitHub Actions every week
       interval: "weekly"
+
+  - package-ecosystem: "sbt"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    ignore:
+      # Scala 3 is not supported yet, stay on Scala 2.
+      - dependency-name: "org.scala-lang:scala-library"
+        update-types: ["version-update:semver-major"]
