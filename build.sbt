@@ -1,4 +1,4 @@
-ThisBuild / scalaVersion := "2.13.18"
+ThisBuild / scalaVersion := "3.10.0"
 
 lazy val root = project
   .in(file("."))
@@ -6,7 +6,7 @@ lazy val root = project
   .settings(
     name               := "scynamo",
     organization       := "io.moia",
-    crossScalaVersions := List("2.13.18", "2.12.21"),
+    crossScalaVersions := List("3.10.0", "2.12.21"),
     scalacOptions ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, 12)) => scalacOptions_2_12
